@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html ng-app="tweetbeat">
+  <head>
+    <meta charset="utf-8">
+    <title>Home</title>
+    <script type="text/javascript">
+      window.$ = window.jQuery = require('jquery');
+      var angular  = require('angular');
+      var Remote = require('remote')
+    </script>
+    <script type="text/javascript" src="bower_components/angular-sanitize/angular-sanitize.min.js"></script>
+    <script type="text/javascript" src="bower_components/angular-route/angular-route.min.js"></script>
+    <script type="text/javascript" src="bower_components/angular-animate/angular-animate.min.js"></script>
+    <script type="text/javascript" src="js/app.js"></script>
+    <script type="text/javascript" src="js/services.js"></script>
+    <script type="text/javascript" src="js/controllers.js"></script>
+    <script type="text/javascript" src="js/directive.js"></script>
+    <link rel="stylesheet" href="css/app.css" media="screen" title="no title" charset="utf-8">
+  </head>
+  <body>
+    <div class="container" ng-controller="MainController">
+      <div id="sidebar">
+      </div>
+      <div id="main">
+        <div ng-view></div>
+      </div>
+    </div>
+    <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css" media="screen" title="no title" charset="utf-8">
+  </body>
+</html>

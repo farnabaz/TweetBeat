@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html ng-app="tweetbeat">
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="css/app.css" media="screen" title="no title" charset="utf-8">
+  </head>
+  <body>
+    <div class="container" ng-controller="TweetController">
+      <textarea name="name" ng-model="status" ng-keydown="keyDown($event)" rows="8" cols="40"></textarea>
+      <button type="button" ng-click="send()" ng-disabled="disabled" name="button">Tweet</button>
+    </div>
+    <script type="text/javascript">
+      var angular  = require('angular');
+      var Remote = require('remote')
+      var app = angular.module('tweetbeat', ['tweetbeat.services']);
+
+      app.controller('TweetController', function($scope, $ui, $api) {
+        $scope.status = ""
+
+        $scope.$watch(function(){
+          return $scope.status
+        }, function(newValue, oldValue){
+          if (newValue.length > 140 || newValue.length == 0)
+            $scope.disabled = true
+          else
+            $scope.disabled = false
+        })
+
+        /**
+         *  Key down event
+         *
+         **/
+        $scope.keyDown = function(event) {
+          var code = event.keyCode || event.which;
+          if (code === 13 && (event.ctrlKey || event.metaKey)) {
+            $scope.send();
+          }
+        }
+
+        /**
+         *  Send tweet
+         *
+         **/
+        $scope.send = function() {
+          if ($api.isReady()) {
+            $ui.hideWindow()
+            $api.tweet($scope.status, {}, function(error, data, response){
+              if (error) {
+                var data = JSON.parse(error.data)
+                if ( data.errors && data.errors[0] )
+                  $ui.alert('error', 'Sending Fail!!!',  data.errors[0].message)
+                else
+                  $ui.alert('error', 'Sending Fail!!!',  "Something went wrong, Please try again.")
+                $ui.showWindow()
+              } else {
+                $ui.closeWindow()
+              }
+            })
+          } else {
+            $ui.alert('error', 'Authentication Fail', 'Cann\'t send tweet, you must login first.')
+          }
+        }
+      });
+    </script>
+    <script type="text/javascript" src="js/services.js"></script>
+  </body>
+</html>

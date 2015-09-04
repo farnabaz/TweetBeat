@@ -1,0 +1,76 @@
+
+<div class="row">
+  <div class="loading" ng-if="isRefreshing">
+    <img src="/images/loading-bars.svg" alt="" />
+  </div>
+  <div class="message" ng-if="!isLoggedIn">
+    <p>
+      <a ng-click="login()" href>Login Twitter</a>
+    </p>
+  </div>
+    <div class="col-xs-12 tweet-list" id="timeline" ng-click="click($event)" >
+        <div class="row" ng-repeat="t in tweets | reverse track by t.id">
+
+          <div class="tweet {{t.favorited ? 'favorited' : ''}} {{t.retweeted ? 'retweeted' : ''}} l{{t.lang}}" id="{{t.id_str}}">
+            <header class="fa fa-retweet" ng-if="t.retweeted_status">
+              {{t.user.name}} retweeted
+            </header>
+            <!-- Normal Tweet -->
+            <section ng-if="!t.retweeted_status && !t.quoted_status">
+              <div class="image">
+                <a href="#user"><img class="user-image" ng-src="{{t.user.profile_image_url}}"></a>
+              </div>
+              <div class="content">
+                <div class="user"><strong>{{t.user.name}}</strong> <small>@{{t.user.screen_name}}</small></div>
+                <div class="text" ng-bind-html="linkify_entities(t) | html"></div>
+              </div>
+            </section>
+            <!-- retweet -->
+            <section ng-if="t.retweeted_status">
+                <div class="image">
+                  <img class="user-image" ng-src="{{t.retweeted_status.user.profile_image_url}}">
+                </div>
+                <div class="content">
+                  <div class="user"><strong ng-bind-html="t.retweeted_status.user.name | html"></strong> <small>@{{t.retweeted_status.user.screen_name}}</small></div>
+                  <div class="text l{{t.retweeted_status.lang}}" ng-bind-html="linkify_entities(t.retweeted_status) | html"></div>
+                </div>
+            </section>
+            <!-- quote -->
+            <section ng-if="t.quoted_status">
+              <div class="image">
+                <img class="user-image" ng-src="{{t.user.profile_image_url}}">
+              </div>
+              <div class="content">
+                <div class="user"><strong>{{t.user.name}}</strong> <small>@{{t.user.screen_name}}</small></div>
+                <div class="text l{{t.lang}}" ng-bind-html="linkify_entities(t) | html"></div>
+                <div class="tweet">
+                  <div class="content">
+                    <div class="user"><strong>{{t.quoted_status.user.name}}</strong> <small>@{{t.quoted_status.user.screen_name}}</small></div>
+                    <div class="text l{{t.quoted_status.lang}}" ng-bind-html="linkify_entities(t.quoted_status) | html"></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <footer>
+              <ul >
+                <li><a href class="fa fa-star" ng-click="favorite(t)"></a></li>
+                <li><a href="#"><i class="fa fa-retweet"></i></a></li>
+                <li><a href="#"><i class="fa fa-reply"></i></a></li>
+              </ul>
+            </footer>
+          </div>
+
+        </div>
+        <!-- end tweet -->
+    <div>
+      <br/>
+      <input type="button" class="btn btn-info" id="load-more" ng-click="refreshTimeline(tweets[tweets.length-1].id)" ng-show="connectedTwitter" value="Load More"/>
+    </div>
+  </div>
+</div>
+<script type="text/javascript">
+    $('#results').click(function(e){
+
+    })
+</script>

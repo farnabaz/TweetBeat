@@ -1,0 +1,26 @@
+{
+  "name": "TweetBeat",
+  "version": "0.0.1",
+  "authors": [
+    "Farnabaz"
+  ],
+  "description": "Twitter Client",
+  "main": "index.js",
+  "keywords": [
+    "twitter"
+  ],
+  "homepage": "http://tweetbeat.ir",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "font-awesome": "~4.4.0",
+    "angular-route": "~1.4.5",
+    "angular-sanitize": "~1.4.5",
+    "angular-animate": "~1.4.5"
+  }
+}
