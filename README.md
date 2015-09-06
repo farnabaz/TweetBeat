@@ -2,4 +2,4 @@
 
 ### Test
 - install `npm` and `bower` dependencies
-- goto app root directory and execute command `./node_modules/.bin/electron .`
+- goto app root directory and execute command `npm start`
