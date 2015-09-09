@@ -1,10 +1,12 @@
 var ipc = require('ipc');
+var shell = require('shell');
 
 //inject the twitterService into the controller
-app.controller('MainController', function($scope, $api, $compile, $ui) {
+app.controller('MainController', function($rootScope, $scope, $api, $compile, $ui, $localStorage) {
 
   // send ouath token to main process
   ipc.send('oauth-tokens', localStorage.oauthTokens || "[]");
+  ipc.send('preferences', $rootScope.settings);
   ipc.on('stream-tweet', function(arg) {
     $scope.$apply(function(){
       $scope.tweets.push(arg)
@@ -40,42 +42,48 @@ app.controller('MainController', function($scope, $api, $compile, $ui) {
      * Licensed under the MIT license
      * http://wades.im/mons
      *
-     * Requires jQuery
      */
-    $scope.escapeHTML = function(text) {
-        return $('<div/>').text(text).html()
+    var el = document.createElement('p')
+    var escapeHTML = function(text) {
+      el.innerHTML = text
+      return el.textContent
     }
     $scope.linkify_entities = function(tweet) {
         if (!(tweet.entities)) {
-            return $scope.escapeHTML(tweet.text)
+            return escapeHTML(tweet.text)
         }
         // This is very naive, should find a better way to parse this
         var index_map = {}
-
-        $.each(tweet.entities.urls, function(i,entry) {
+        Array.prototype.forEach.call(tweet.entities.urls, function(entry, i) {
             index_map[entry.indices[0]] = [entry.indices[1], function(text) {
-              return "<a class='url' target='_blank' href='"+$scope.escapeHTML(entry.url)+"'>"+$scope.escapeHTML(entry.display_url)+"</a>"
+              return "<a class='url' target='_blank' href='"+escapeHTML(entry.url)+"'>"+escapeHTML(entry.display_url)+"</a>"
             }]
         })
 
-        $.each(tweet.entities.hashtags, function(i,entry) {
-            index_map[entry.indices[0]] = [entry.indices[1], function(text) {return "<a href='http://twitter.com/search?q="+escape("#"+entry.text)+"'>"+$scope.escapeHTML(text)+"</a>"}]
+        Array.prototype.forEach.call(tweet.entities.hashtags, function(entry, i) {
+            index_map[entry.indices[0]] = [entry.indices[1], function(text) {return "<a class='hashtag' href='http://twitter.com/search?q="+escape("#"+entry.text)+"'>"+escapeHTML(text)+"</a>"}]
         })
 
-        $.each(tweet.entities.user_mentions, function(i,entry) {
-            index_map[entry.indices[0]] = [entry.indices[1], function(text) {return "<a class='mention' title='"+$scope.escapeHTML(entry.name)+"' href='http://twitter.com/"+$scope.escapeHTML(entry.screen_name)+"'>"+$scope.escapeHTML(text)+"</a>"}]
+        Array.prototype.forEach.call(tweet.entities.symbols, function(entry, i) {
+            index_map[entry.indices[0]] = [entry.indices[1], function(text) {return "<a class='symbol' href='http://twitter.com/search?q="+escape("$"+entry.text)+"'>"+escapeHTML(text)+"</a>"}]
         })
-        if (tweet.entities.media)
-        $.each(tweet.entities.media, function(i,entry) {
-            index_map[entry.indices[0]] = [entry.indices[1], function(text) {
-              if (entry.type == "photo")
-                return "<div class='media' ng-click='console.log($scope)' data-url='"
-                  + $scope.escapeHTML(entry.media_url)
-                  + "' style='background-image:url("+$scope.escapeHTML(entry.media_url)+":small)'></div>"
-              else
-                return "<a title='"+$scope.escapeHTML(entry.name)+"' href='http://twitter.com/"+$scope.escapeHTML(entry.screen_name)+"'>"+$scope.escapeHTML(text)+"</a>"
-            }]
+
+        Array.prototype.forEach.call(tweet.entities.user_mentions, function(entry, i) {
+            index_map[entry.indices[0]] = [entry.indices[1], function(text) {return "<a class='mention' title='"+escapeHTML(entry.name)+"' href='http://twitter.com/"+escapeHTML(entry.screen_name)+"'>"+escapeHTML(text)+"</a>"}]
         })
+
+        if (tweet.entities.media) {
+          Array.prototype.forEach.call(tweet.entities.media, function(entry, i) {
+              index_map[entry.indices[0]] = [entry.indices[1], function(text) {
+                if ($rootScope.settings['image-preview'])
+                  return "<div class='media' data-url='"
+                    + escapeHTML(entry.media_url)
+                    + "' style='background-image:url("+escapeHTML(entry.media_url)+":small)'></div>"
+                else
+                  return "<a title='"+escapeHTML(entry.name)+"' href='http://twitter.com/"+escapeHTML(entry.screen_name)+"'>"+escapeHTML(text)+"</a>"
+              }]
+          })
+        }
 
         var result = ""
         var last_i = 0
@@ -88,7 +96,7 @@ app.controller('MainController', function($scope, $api, $compile, $ui) {
                 var end = ind[0]
                 var func = ind[1]
                 if (i > last_i) {
-                    result += $scope.escapeHTML(tweet.text.substring(last_i, i))
+                    result += escapeHTML(tweet.text.substring(last_i, i))
                 }
                 result += func(tweet.text.substring(i, end))
                 i = end - 1
@@ -97,13 +105,13 @@ app.controller('MainController', function($scope, $api, $compile, $ui) {
         }
 
         if (i > last_i) {
-            result += $scope.escapeHTML(tweet.text.substring(last_i, i))
+            result += escapeHTML(tweet.text.substring(last_i, i))
         }
         return result
     }
 });
-app.controller('WindowController', function($scope,$q, $api, $compile, $ui) {
-console.log(location.hash);
+app.controller('WindowController', function($scope, $api, $compile, $ui) {
+
 })
 
 // create the controller and inject Angular's $scope
@@ -132,7 +140,7 @@ app.controller('TimelineController', function($scope, $api, $ui) {
       } else {
         $scope.$apply(function(){
           var items = JSON.parse(data).reverse()
-          console.log(items);
+
           items.forEach(function(item){
             $scope.tweets.push(item)
           })
@@ -158,12 +166,15 @@ app.controller('TimelineController', function($scope, $api, $ui) {
    }
 
   $scope.click = function(e) {
+    e.preventDefault()
     var el = $(e.target)
     if ( el.is('.media') ) {
       var w = window.open('/window.html#/image/'+btoa(el.data('url')),
       {
         // toolbar: false
       })
+    } else if (el.is('[target="_blank"]')) {
+      shell.openExternal(el.attr('href'));
     } else if (el.is('a')) {
       if (el.is('.fa-star')) {
         var id = el.parents('.tweet').attr('id')

@@ -39,7 +39,7 @@ module.exports = {
           {
             label: 'Close',
             accelerator: 'CmdOrCtrl+W',
-            selector: 'performClose:'
+            role: 'close'
           },
         ]
       },
@@ -49,28 +49,28 @@ module.exports = {
           {
             label: 'Undo',
             accelerator: 'CmdOrCtrl+Z',
-            selector: 'undo:'
+            role: 'undo'
           },{
             label: 'Redo',
             accelerator: 'Shift+CmdOrCtrl+Z',
-            selector: 'redo:'
+            role: 'redo'
           },
           { type: 'separator' },{
             label: 'Cut',
             accelerator: 'CmdOrCtrl+X',
-            selector: 'cut:'
+            role: 'cut'
           },{
             label: 'Copy',
             accelerator: 'CmdOrCtrl+C',
-            selector: 'copy:'
+            role: 'copy'
           },{
             label: 'Paste',
             accelerator: 'CmdOrCtrl+V',
-            selector: 'paste:'
+            role: 'paste'
           },{
             label: 'Select All',
             accelerator: 'CmdOrCtrl+A',
-            selector: 'selectAll:'
+            role: 'selectall'
           },
         ]
       },
@@ -107,16 +107,12 @@ module.exports = {
       },
       {
         label: 'Window',
+        role: 'window',
         submenu: [
           {
             label: 'Minimize',
             accelerator: 'CmdOrCtrl+M',
-            selector: 'performMiniaturize:'
-          },
-          {
-            label: 'Bring All to Front',
-            accelerator: 'CmdOrCtrl+M',
-            selector: 'performMiniaturize:'
+            role: 'minimize'
           },
           { type: 'separator' },
           {
@@ -166,6 +162,7 @@ module.exports = {
       },
       {
         label: 'Help',
+        role: 'help',
         submenu: [
           {
             label: 'Learn More',
@@ -187,12 +184,17 @@ module.exports = {
           },
           { type: 'separator' },
           {
+            label: 'Preferences...',
+            accelerator: 'Command+,',
+            click: function(){
+              application.openPreferences()
+            }
+          },
+          { type: 'separator' },
+          {
             label: 'Services',
-            submenu: [
-              {
-                role: "services"
-              }
-            ]
+            role: 'services',
+            submenu: []
           },
           { type: 'separator' },
           {
@@ -222,7 +224,7 @@ module.exports = {
         { type: 'separator' },
         {
           label: 'Bring All to Front',
-          selector: 'arrangeInFront:'
+          role: 'front'
         }
       );
     }

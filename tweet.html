@@ -3,17 +3,59 @@
   <head>
     <meta charset="utf-8">
     <link rel="stylesheet" href="css/app.css" media="screen" title="no title" charset="utf-8">
+    <style>
+      textarea {
+        position: fixed;
+        top: 0;
+        left: 70px;
+        right: 0;
+        bottom: 40px;
+        display: block;
+        resize: none;
+        width: 260px;
+        border: none;
+        outline: none;
+        line-height: 1.5em;
+        font-family: {{settings['font-family']}};
+        font-size: {{settings['font-size']}};
+      }
+      body {
+        -webkit-user-select: none;
+        font-family: {{settings['font-family']}};
+        font-size: {{settings['font-size']}};
+      }
+    </style>
   </head>
-  <body>
+  <body class="{{settings['style']}}">
     <div class="container" ng-controller="TweetController">
       <textarea name="name" ng-model="status" ng-keydown="keyDown($event)" rows="8" cols="40"></textarea>
       <button type="button" ng-click="send()" ng-disabled="disabled" name="button">Tweet</button>
+      <small>{{140-status.length}}</small>
     </div>
     <script type="text/javascript">
       var angular  = require('angular');
       var Remote = require('remote')
-      var app = angular.module('tweetbeat', ['tweetbeat.services']);
+      var app = angular.module('tweetbeat', ['ngStorage', 'tweetbeat.services']);
+      app.run(function($localStorage, $rootScope){
+         $localStorage.$default({
+          settings: {
+            "menubar-icon": true,
+            "font-size": "12pt",
+            "font-family": "'Helvetica Neue',Helvetica,Arial,sans-serif",
+            "style": "light",
+            "image-preview": true,
 
+            "notify-tweets": ["menubar", "dock icon", "notification center"],
+            "notify-mentions": ["menubar", "dock icon", "notification center"],
+            "notify-favorites": ["menubar", "dock icon", "notification center"],
+            "notify-retweets": ["menubar", "dock icon", "notification center"],
+            "notify-followers": ["menubar", "dock icon", "notification center"],
+            "notify-messages": ["menubar", "dock icon", "notification center"],
+            "notify-lists": ["menubar", "dock icon", "notification center"]
+          }
+        })
+        $rootScope.settings = $localStorage.settings
+      })
       app.controller('TweetController', function($scope, $ui, $api) {
         $scope.status = ""
 
@@ -63,5 +105,6 @@
       });
     </script>
     <script type="text/javascript" src="js/services.js"></script>
+    <script type="text/javascript" src="bower_components/ngstorage/ngStorage.min.js"></script>
   </body>
 </html>

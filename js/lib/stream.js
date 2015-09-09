@@ -114,6 +114,7 @@ Stream.prototype.stream = function(params) {
                         try {
                             stream.emit('data', JSON.parse(json));
                         } catch(e) {
+                          console.log(e);
                             stream.emit('garbage', data);
                         }
                     }

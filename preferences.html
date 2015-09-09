@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html ng-app="tweetbeat">
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="css/app.css" media="screen" title="no title" charset="utf-8">
+  </head>
+  <body>
+    <div class="container" ng-controller="PreferencesController">
+      <textarea name="name" ng-model="settings" rows="8" cols="40"></textarea>
+    </div>
+    <script type="text/javascript">
+      var angular  = require('angular');
+      var Remote = require('remote')
+      var app = angular.module('tweetbeat', ['ngStorage']);
+
+      app.controller('PreferencesController', function($scope, $localStorage) {
+        $scope.settings = JSON.stringify($localStorage.settings, null, 4)
+      });
+    </script>
+    <script type="text/javascript" src="js/services.js"></script>
+    <script type="text/javascript" src="bower_components/ngstorage/ngStorage.min.js"></script>
+
+  </body>
+</html>

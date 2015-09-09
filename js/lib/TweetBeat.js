@@ -4,6 +4,7 @@ var Menu = require('menu')
 var Tray = require('tray')
 var Url = require('url')
 var IPC = require('ipc');  // Messaging module
+var Notifier = require('node-notifier');
 var Stream = require('./stream.js')
 var AppMenu = require('./app-menu.js')
 
@@ -34,7 +35,7 @@ var Internal = {
       callback(filePath);
     });
   },
-  registerOauthToken: function() {
+  registerIPC: function() {
     IPC.on('oauth-tokens', function(event, arg) {
       var tokens = JSON.parse(arg);
       for (i in tokens) {
@@ -42,6 +43,9 @@ var Internal = {
           Internal.connect(i, tokens[i].name, tokens[i].token, tokens[i].secret);
       }
     });
+    IPC.on('preferences', function(event, arg){
+      TweetBeat.preferences = arg
+    })
   },
   connect: function(index, name, oauth_token, oauth_token_secret) {
     this.userStream[name] = new Stream({
@@ -59,22 +63,22 @@ var Internal = {
       console.log('connected');
     })
     _stream.on('data', function(data) {
-      if (TweetBeat._mainWindow != null) {
+      if (TweetBeat.mainWindow() != null) {
         if (data.id_str) {
-          TweetBeat._mainWindow.webContents.send('stream-tweet', data)
+          TweetBeat.mainWindow().webContents.send('stream-tweet', data)
         } else if (data.delete) {
-          TweetBeat._mainWindow.webContents.send('stream-delete', data)
+          TweetBeat.mainWindow().webContents.send('stream-delete', data)
         } else if (data.event == "favorite") {
-          TweetBeat._mainWindow.webContents.send('stream-favorite', data)
+          TweetBeat.mainWindow().webContents.send('stream-favorite', data)
         } else if (data.event == "follow") {
-          TweetBeat._mainWindow.webContents.send('stream-follow', data)
+          TweetBeat.mainWindow().webContents.send('stream-follow', data)
         } else if (data.event == "quoted_tweet") {
-          TweetBeat._mainWindow.webContents.send('stream-quoted_tweet', data)
+          TweetBeat.mainWindow().webContents.send('stream-quoted_tweet', data)
         } else {
           console.log(data);
         }
       } else {
-
+        Internal.notify(data);
       }
     })
     _stream.on('garbage', function(json) {
@@ -93,6 +97,42 @@ var Internal = {
       // TODO: need implement
       console.log("close");
     });
+  },
+
+  notify: function(data) {
+    var types = [],
+      title = void 0,
+      subtitle = void 0,
+      message = void 0
+    if (data.id_str) {
+      types = TweetBeat.preferences['notify-tweets'] || []
+      data = data.retweeted_status || data.quoted_status || data
+      title = data.user.name + " - @" + data.user.screen_name
+      message = data.text
+    } else if (data.event == "favorite") {
+      types = TweetBeat.preferences['notify-favorites'] || []
+      title = data.source.name + " favorited"
+      messages = json.target_object.text
+    } else if (data.event == "quoted_tweet") {
+      types = TweetBeat.preferences['notify-retweets'] || []
+      title = data.source.name + " retweeted"
+      messages = json.target_object.text
+    }
+
+    if (types.indexOf("notification center") > -1) {
+      Notifier.notify({
+        title: title,
+        subtitle: subtitle,
+        message: message,
+        sender: "com.github.electron"
+      })
+    }
+    if (types.indexOf("dock icon") > -1) {
+
+    }
+    if (types.indexOf("menubar") > -1) {
+
+    }
   }
 }
 var TweetBeat = {
@@ -122,6 +162,11 @@ var TweetBeat = {
    **/
   _unreadMessages: 0,
   /**
+   *  User Preferences
+   *
+   **/
+  preferences: {},
+  /**
    *  Initialize Applicaiton
    *
    **/
@@ -147,7 +192,11 @@ var TweetBeat = {
 
     app.on('ready', function(){
       Internal.setupProtocol()
-      Internal.registerOauthToken()
+      Internal.registerIPC()
+      Notifier.on('click', function (notifierObject, options) {
+        // Happens if `wait: true` and user clicks notification
+        TweetBeat.mainWindow(true).show()
+      })
 
       TweetBeat.updateDocMenu()
 
@@ -299,6 +348,24 @@ var TweetBeat = {
     direct.loadUrl('app://tweetbeat.app/direct.html')
     direct.webContents.on('did-finish-load', function() {
       direct.show();
+    });
+  },
+  /**
+   *  Open preferences window
+   *
+   **/
+  openPreferences: function() {
+    var preferences = new BrowserWindow({
+      width: 600,
+      height: 400,
+      title: 'New Direct Message',
+      resizable: false,
+      fullscreen: false,
+      show: false
+    })
+    preferences.loadUrl('app://tweetbeat.app/preferences.html')
+    preferences.webContents.on('did-finish-load', function() {
+      preferences.show();
     });
   },
   /**

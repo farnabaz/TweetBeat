@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <html ng-app="tweetbeat">
   <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
     <meta charset="utf-8">
     <title>Home</title>
     <script type="text/javascript">
+      // disable zoom
+      require('web-frame').setZoomLevelLimits(1, 1);
       window.$ = window.jQuery = require('jquery');
       var angular  = require('angular');
       var Remote = require('remote')
     </script>
     <script type="text/javascript" src="bower_components/angular-sanitize/angular-sanitize.min.js"></script>
+    <script type="text/javascript" src="bower_components/ngstorage/ngStorage.min.js"></script>
     <script type="text/javascript" src="bower_components/angular-route/angular-route.min.js"></script>
     <script type="text/javascript" src="bower_components/angular-animate/angular-animate.min.js"></script>
     <script type="text/javascript" src="js/app.js"></script>
@@ -16,8 +20,15 @@
     <script type="text/javascript" src="js/controllers.js"></script>
     <script type="text/javascript" src="js/directive.js"></script>
     <link rel="stylesheet" href="css/app.css" media="screen" title="no title" charset="utf-8">
+    <style>
+      body {
+        -webkit-user-select: none;
+        font-family: {{settings['font-family']}};
+        font-size: {{settings['font-size']}};
+      }
+    </style>
   </head>
-  <body>
+  <body class="{{settings['style']}}">
     <div class="container" ng-controller="MainController">
       <div id="sidebar">
       </div>
