@@ -18,9 +18,10 @@
     "tests"
   ],
   "dependencies": {
-    "font-awesome": "~4.4.0",
-    "angular-route": "~1.4.5",
+    "angular-animate": "~1.4.5",
     "angular-sanitize": "~1.4.5",
-    "angular-animate": "~1.4.5"
+    "angular-ui-router": "~0.2.15",
+    "font-awesome": "~4.4.0",
+    "ngInfiniteScroll": "1.0.0"
   }
 }

@@ -8,6 +8,9 @@ var Notifier = require('node-notifier');
 var Stream = require('./stream.js')
 var AppMenu = require('./app-menu.js')
 
+// app.commandLine.appendSwitch('proxy-server', 'http://165.139.179.225:8080');
+
+
 var BrowserWindow = require('browser-window');
 /**
  *  Apllicaiton Access tokens
@@ -87,7 +90,7 @@ var Internal = {
     });
     _stream.on('error', function(json) {
       // TODO: need implement
-      console.log("error");
+      console.log(json);
     });
     _stream.on('end', function() {
       // TODO: need implement
@@ -298,7 +301,8 @@ var TweetBeat = {
     if (this._mainWindow == null && create) {
       this._mainWindow = new BrowserWindow({
         width: 370,
-        height: 700
+        height: 700,
+        frame: false
       })
       this._mainWindow.loadUrl('app://tweetbeat.app/index.html')
 
@@ -331,6 +335,21 @@ var TweetBeat = {
       tweet.show();
     });
   },
+  // replyTo: function(tweet) {
+  //   var reply = new BrowserWindow({
+  //     width: 330,
+  //     height: 150,
+  //     title: 'Replay',
+  //     'always-on-top': true,
+  //     resizable: false,
+  //     fullscreen: false,
+  //     show: false
+  //   })
+  //   reply.loadUrl('app://tweetbeat.app/tweet.html/'+tweet.id_str+"/"+tweet.user.id)
+  //   reply.webContents.on('did-finish-load', function() {
+  //     tweet.reply();
+  //   });
+  // },
   /**
    *  Create new direct message window
    *

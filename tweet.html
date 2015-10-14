@@ -2,82 +2,147 @@
 <html ng-app="tweetbeat">
   <head>
     <meta charset="utf-8">
-    <link rel="stylesheet" href="css/app.css" media="screen" title="no title" charset="utf-8">
-    <style>
-      textarea {
-        position: fixed;
-        top: 0;
-        left: 70px;
-        right: 0;
-        bottom: 40px;
-        display: block;
-        resize: none;
-        width: 260px;
-        border: none;
-        outline: none;
-        line-height: 1.5em;
-        font-family: {{settings['font-family']}};
-        font-size: {{settings['font-size']}};
-      }
-      body {
-        -webkit-user-select: none;
-        font-family: {{settings['font-family']}};
-        font-size: {{settings['font-size']}};
-      }
+    <link rel="stylesheet" href="css/tweet-page.css" media="screen" charset="utf-8"/>
+    <style media="screen">
+    body {
+      -webkit-user-select: none;
+      font-family: {{settings['font-family']}};
+      font-size: {{settings['font-size']}};
+      box-sizing: border-box;
+    }
+    .CodeMirror {
+      position: fixed !important ;
+      font-family: {{settings['font-family']}} !important;
+      font-size: {{settings['font-size']}} !important;
+      height: auto !important;
+    }
+    {}
     </style>
   </head>
   <body class="{{settings['style']}}">
     <div class="container" ng-controller="TweetController">
-      <textarea name="name" ng-model="status" ng-keydown="keyDown($event)" rows="8" cols="40"></textarea>
-      <button type="button" ng-click="send()" ng-disabled="disabled" name="button">Tweet</button>
-      <small>{{140-status.length}}</small>
+      <textarea id="status"></textarea>
+      <div style="width:60px;text-align:center;">
+        <div><img class="user-image" ng-src="{{me | profile_image}}"></div>
+        <center><small>{{availableTextLength - status.length}}</small></center>
+      </div>
+      <footer>
+        <button type="button" ng-click="send()" ng-disabled="disabled" name="button">Tweet</button>
+        <div id="media">
+        </div>
+      </footer>
+
     </div>
     <script type="text/javascript">
       var angular  = require('angular');
       var Remote = require('remote')
+
       var app = angular.module('tweetbeat', ['ngStorage', 'tweetbeat.services']);
       app.run(function($localStorage, $rootScope){
-         $localStorage.$default({
-          settings: {
-            "menubar-icon": true,
-            "font-size": "12pt",
-            "font-family": "'Helvetica Neue',Helvetica,Arial,sans-serif",
-            "style": "light",
-            "image-preview": true,
-
-            "notify-tweets": ["menubar", "dock icon", "notification center"],
-            "notify-mentions": ["menubar", "dock icon", "notification center"],
-            "notify-favorites": ["menubar", "dock icon", "notification center"],
-            "notify-retweets": ["menubar", "dock icon", "notification center"],
-            "notify-followers": ["menubar", "dock icon", "notification center"],
-            "notify-messages": ["menubar", "dock icon", "notification center"],
-            "notify-lists": ["menubar", "dock icon", "notification center"]
-          }
-        })
         $rootScope.settings = $localStorage.settings
+        $rootScope.me = $localStorage.me || {}
       })
+      app.filter('profile_image', function(){
+          return function(user) {
+              return user.profile_image_url.replace('_normal', '_bigger');
+          };
+      });
       app.controller('TweetController', function($scope, $ui, $api) {
+        $scope.media = []
+        // upload file
+        if (window.File && window.FileList && window.FileReader) {
+            var filedrag = document.body
+            // is XHR2 available?
+            var xhr = new XMLHttpRequest();
+            if (xhr.upload) {
+                filedrag.ondrop = handler
+            }
+        }
+        function handler(e) {
+            // cancel event and hover styling
+            e.stopPropagation();
+            e.preventDefault();
+            var files = e.dataTransfer.files || e.originalEvent.target.files || e.originalEvent.dataTransfer.files;
+
+            for(index in files) {
+              var file = files[index]
+              if (file.type && file.type.match(/image/) && document.querySelectorAll('#media i').length < 5) {
+                showImage(file);
+              }
+            }
+        }
+        function showImage(f, id) {
+          var img = document.createElement('i');
+          document.getElementById('media').appendChild(img)
+          var reader = new FileReader();
+          reader.onloadend = function() {
+            img.style.backgroundImage = 'url('+reader.result+')'
+            $scope.$apply(function(){
+              $scope.availableTextLength -= 23;
+            })
+          }
+          reader.readAsDataURL(f);
+        }
+
+        window.onload=function(){
+          // codemirror
+          CodeMirror.defineSimpleMode("tweetbeatmode", {
+            start: [
+              {regex: /[a-z0-9_\.-]+@[\da-z\.-]+\.[a-z\.]{2,6}/, token: "keyword"},
+          		{regex: /https?:\/\/?[\da-z\.-]+\.[a-z\.]{2,6}([\/\w\?\=\.-]*)*\/?/, token: "keyword"},
+              {regex: /\s#[^#\s,;]+|\s@[^\s]+|^#[^#\s,;]+|^@[^\s]+/, token: "keyword"}
+            ]
+          });
+          $scope.editor = CodeMirror.fromTextArea(document.getElementById('status'), {
+            value:document.getElementById('status').value,
+            mode:  "tweetbeatmode",
+            viewportMargin: Infinity,
+          	lineWrapping:true,
+            extraKeys: {
+              "Cmd-Enter": function(instance) { !$scope.disabled && $scope.send() },
+              "Ctrl-Enter": function(instance) { !$scope.disabled && $scope.send() },
+            }
+          });
+          $scope.editor.on('change', function(cm, data) {
+            $scope.$apply(function(){
+              $scope.status = cm.getValue()
+            })
+          });
+          $scope.editor.focus()
+        }
+
+
+
+        // Inside the menu callback
+        require('ipc').on('data', function(action, tweet) {
+          // File save function call here
+          if (action == 'reply') {
+            $scope.$apply(function(){
+              $scope.editor.setValue("@" + tweet.user.screen_name + ' ')
+              $scope.options.in_reply_to_status_id = tweet.id_str
+            })
+          } else if (action == 'retweet') {
+            $scope.$apply(function(){
+              $scope.tweet = tweet;
+              $scope.availableTextLength -= 23;
+              $scope.retweet = "https://twitter.com/"+tweet.user.screen_name+"/status/"+tweet.id_str
+              $scope.disabled = false
+            })
+          }
+        });
         $scope.status = ""
+        $scope.availableTextLength = 140;
+        $scope.options = {}
+        $scope.retweet = false
 
         $scope.$watch(function(){
-          return $scope.status
+          return $scope.availableTextLength - $scope.status.length
         }, function(newValue, oldValue){
-          if (newValue.length > 140 || newValue.length == 0)
+          if (newValue < 0 || (newValue == 140))
             $scope.disabled = true
           else
             $scope.disabled = false
         })
-
-        /**
-         *  Key down event
-         *
-         **/
-        $scope.keyDown = function(event) {
-          var code = event.keyCode || event.which;
-          if (code === 13 && (event.ctrlKey || event.metaKey)) {
-            $scope.send();
-          }
-        }
 
         /**
          *  Send tweet
@@ -86,25 +151,74 @@
         $scope.send = function() {
           if ($api.isReady()) {
             $ui.hideWindow()
-            $api.tweet($scope.status, {}, function(error, data, response){
-              if (error) {
-                var data = JSON.parse(error.data)
-                if ( data.errors && data.errors[0] )
-                  $ui.alert('error', 'Sending Fail!!!',  data.errors[0].message)
-                else
-                  $ui.alert('error', 'Sending Fail!!!',  "Something went wrong, Please try again.")
-                $ui.showWindow()
-              } else {
-                $ui.closeWindow()
-              }
-            })
+            // var images = document.querySelectorAll('#media i');
+            //
+            // if (images[0] && images[0].style) {
+            //   var data = images[0].style.backgroundImage.replace(/url\(data.*base64,/, '').replace(')', '')
+            //   $api.upload(data, function(error,data,c){
+            //     if (error) {
+            //     } else {
+            //       // success
+            //       $scope.options.media = $scope.options.media || []
+            //       $scope.options.media.push(JSON.parse(data).media_id_string)
+            //     }
+            //   })
+            // }
+            // if (images[1] && images[1].style) {
+            //   var data = images[1].style.backgroundImage.replace(/url\(data.*base64,/, '').replace(')', '')
+            //   $api.upload(data, function(error,data,c){
+            //     if (error) {
+            //     } else {
+            //       // success
+            //       $scope.options.media = $scope.options.media || []
+            //       $scope.options.media.push(JSON.parse(data).media_id_string)
+            //     }
+            //   })
+            // }
+            if ($scope.retweet && !$scope.status && !$scope.options.media) {
+              $api.retweet($scope.tweet.id_str, function(error, data, response){
+                if (error) {
+                  var data = JSON.parse(error.data)
+                  if ( data.errors && data.errors[0] )
+                    $ui.alert('error', 'Sending Fail!!!',  data.errors[0].message)
+                  else
+                    $ui.alert('error', 'Sending Fail!!!',  "Something went wrong, Please try again.")
+                  $ui.showWindow()
+                } else {
+                  $ui.closeWindow()
+                }
+              })
+            } else {
+              var text = $scope.status + ($scope.retweet ? " " + $scope.retweet : "")
+              $api.tweet(text, $scope.options, function(error, data, response){
+                if (error) {
+                  var data = JSON.parse(error.data)
+                  if ( data.errors && data.errors[0] )
+                    $ui.alert('error', 'Sending Fail!!!',  data.errors[0].message)
+                  else
+                    $ui.alert('error', 'Sending Fail!!!',  "Something went wrong, Please try again.")
+                  $ui.showWindow()
+                } else {
+                  $ui.closeWindow()
+                }
+              })
+            }
+
           } else {
             $ui.alert('error', 'Authentication Fail', 'Cann\'t send tweet, you must login first.')
           }
         }
       });
+
+      </script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.5.0/codemirror.min.js"></script>
+      <script type="text/javascript" src="https://codemirror.net/addon/mode/simple.js"></script>
+
+      <script type="text/javascript">
+
     </script>
     <script type="text/javascript" src="js/services.js"></script>
     <script type="text/javascript" src="bower_components/ngstorage/ngStorage.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.5.0/codemirror.min.css" media="screen" title="no title" charset="utf-8">
   </body>
 </html>

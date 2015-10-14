@@ -2,129 +2,167 @@ var ipc = require('ipc');
 var shell = require('shell');
 
 //inject the twitterService into the controller
-app.controller('MainController', function($rootScope, $scope, $api, $compile, $ui, $localStorage) {
+app.controller('MainController', function($rootScope, $scope, $state, $api, $compile, $ui, $localStorage) {
+  $scope.isLoggedIn = false
+  $scope.isRefreshing = false
+  $scope.me = $localStorage.me || {}
+  $api.me(function(error, data, response){
+    if (!error) {
+      $scope.$apply(function(){
+        $localStorage.me = JSON.parse(data)
+        $scope.me = $localStorage.me
+      })
+    }
+  })
 
   // send ouath token to main process
   ipc.send('oauth-tokens', localStorage.oauthTokens || "[]");
   ipc.send('preferences', $rootScope.settings);
   ipc.on('stream-tweet', function(arg) {
     $scope.$apply(function(){
-      $scope.tweets.push(arg)
+      $scope.tweets[arg.id_str] = arg
+      $scope.tweets_order.unshift(arg.id_str)
     })
   });
-  ipc.on('stream-favorite', function(json) {
-    $ui.notify(json.source.name + " favorited", json.target_object.text, function(){
+  ipc.on('stream-favorite', function(item) {
+    $ui.notify(item.source.name + " favorited", item.target_object.text, function(){
       // TODO: goto notifications
     })
   });
 
+  $scope.tweets = {}; //array of tweets
+  $scope.tweets_order = [];
+  $scope.updateOrder = function() {
+    $scope.tweets_order = Object.keys($scope.tweets)
+    $scope.tweets_order.sort().reverse()
+  }
 
-  $scope.tweets = []; //array of tweets
-
-
-  $scope.favorite = function(tweet) {
+  $scope.favorite = function(tid) {
+    var tweet = $scope.tweets[tid]
+    tweet.favorited = true
     $api.favoriteCreate(tweet, function(er, data, res){
-      console.log(er,data,res);
+      if (!er) {
+        var item = JSON.parse(data)
+        $scope.$apply(function(){
+          $scope.tweets[item.id_str] = item
+        })
+      } else {
+        $scope.$apply(function(){
+          $scope.tweets[tid].favorited = false
+        })
+      }
     });
+  }
+  $scope.reply = function(tid) {
+    var tweet = $scope.tweets[tid]
+    $ui.replyTo(tweet)
+  }
+  $scope.retweet = function(tid) {
+    var tweet = $scope.tweets[tid]
+    tweet = tweet.retweeted_status || tweet
+    $ui.retweet(tweet)
+  }
+
+  $scope.getTitle = function() {
+    var $out = "";
+    if ($state.params.back)
+      $out += '<back>'+$state.params.back+'</back>'
+
+    if ($state.params.title)
+      $out += '<b>'+$state.params.title+'</b>'
+
+    if ($out == "") {
+      $out = "<b>Home</b>"
+    }
+    return $out
+  }
+  $scope.titleClicked = function(e) {
+    var el = $(e.target)
+    if (el.is('back')) {
+      $('#main').addClass('back')
+      window.history.back()
+    }
+  }
+
+  $scope.click = function(e) {
+    e.preventDefault()
+    var el = $(e.target)
+    if ( el.is('.media') ) {
+      var w = window.open('/window.html#/image/'+btoa(el.data('url')),
+      {
+        // toolbar: false
+      })
+    } else if (el.is('.instagram')){
+        var w = window.open('/window.html#/instagram/'+btoa(el.data('url')),
+        {
+          toolbar: false,
+          width:500,
+          height: 600
+        },"width=500, height=600, title=TweetBeat")
+    } else if (el.is('[target="_blank"]')) {
+      shell.openExternal(el.attr('href'));
+    } else if (el.is('.user-image')) {
+      var tid = el.parents('.tweet').attr('id')
+      var user = $scope.tweets[tid].retweeted_status && $scope.tweets[tid].retweeted_status.user
+        || $scope.tweets[tid].user
+      $('#main').removeClass('back')
+      $state.go('user', {
+        id: user.screen_name,
+        back: $state.params.title,
+        title: user.name,
+        user: user
+      });
+    }
+     else {
+
+    }
+  }
+
+  $scope.activeSection = function(section) {
+    $('#sidebar .icon').removeClass('active')
+    $('#sidebar .'+section).addClass('active')
   }
 
 
+  $scope.startLoading = function() {
+    $scope.isRefreshing = true
+  }
 
-    /*
-     * twitter-entities.js
-     * This function converts a tweet with "entity" metadata
-     * from plain text to linkified HTML.
-     *
-     * See the documentation here: http://dev.twitter.com/pages/tweet_entities
-     * Basically, add ?include_entities=true to your timeline call
-     *
-     * Copyright 2010, Wade Simmons
-     * Licensed under the MIT license
-     * http://wades.im/mons
-     *
-     */
-    var el = document.createElement('p')
-    var escapeHTML = function(text) {
-      el.innerHTML = text
-      return el.textContent
-    }
-    $scope.linkify_entities = function(tweet) {
-        if (!(tweet.entities)) {
-            return escapeHTML(tweet.text)
-        }
-        // This is very naive, should find a better way to parse this
-        var index_map = {}
-        Array.prototype.forEach.call(tweet.entities.urls, function(entry, i) {
-            index_map[entry.indices[0]] = [entry.indices[1], function(text) {
-              return "<a class='url' target='_blank' href='"+escapeHTML(entry.url)+"'>"+escapeHTML(entry.display_url)+"</a>"
-            }]
-        })
+  $scope.stopLoading = function() {
+    $scope.isRefreshing = false
+  }
 
-        Array.prototype.forEach.call(tweet.entities.hashtags, function(entry, i) {
-            index_map[entry.indices[0]] = [entry.indices[1], function(text) {return "<a class='hashtag' href='http://twitter.com/search?q="+escape("#"+entry.text)+"'>"+escapeHTML(text)+"</a>"}]
-        })
+  $scope.loggedIn = function() {
+    $scope.isLoggedIn = true
+  }
 
-        Array.prototype.forEach.call(tweet.entities.symbols, function(entry, i) {
-            index_map[entry.indices[0]] = [entry.indices[1], function(text) {return "<a class='symbol' href='http://twitter.com/search?q="+escape("$"+entry.text)+"'>"+escapeHTML(text)+"</a>"}]
-        })
-
-        Array.prototype.forEach.call(tweet.entities.user_mentions, function(entry, i) {
-            index_map[entry.indices[0]] = [entry.indices[1], function(text) {return "<a class='mention' title='"+escapeHTML(entry.name)+"' href='http://twitter.com/"+escapeHTML(entry.screen_name)+"'>"+escapeHTML(text)+"</a>"}]
-        })
-
-        if (tweet.entities.media) {
-          Array.prototype.forEach.call(tweet.entities.media, function(entry, i) {
-              index_map[entry.indices[0]] = [entry.indices[1], function(text) {
-                if ($rootScope.settings['image-preview'])
-                  return "<div class='media' data-url='"
-                    + escapeHTML(entry.media_url)
-                    + "' style='background-image:url("+escapeHTML(entry.media_url)+":small)'></div>"
-                else
-                  return "<a title='"+escapeHTML(entry.name)+"' href='http://twitter.com/"+escapeHTML(entry.screen_name)+"'>"+escapeHTML(text)+"</a>"
-              }]
-          })
-        }
-
-        var result = ""
-        var last_i = 0
-        var i = 0
-
-        // iterate through the string looking for matches in the index_map
-        for (i=0; i < tweet.text.length; ++i) {
-            var ind = index_map[i]
-            if (ind) {
-                var end = ind[0]
-                var func = ind[1]
-                if (i > last_i) {
-                    result += escapeHTML(tweet.text.substring(last_i, i))
-                }
-                result += func(tweet.text.substring(i, end))
-                i = end - 1
-                last_i = end
-            }
-        }
-
-        if (i > last_i) {
-            result += escapeHTML(tweet.text.substring(last_i, i))
-        }
-        return result
-    }
 });
 app.controller('WindowController', function($scope, $api, $compile, $ui) {
 
 })
 
 // create the controller and inject Angular's $scope
-app.controller('TimelineController', function($scope, $api, $ui) {
-  $scope.isLoggedIn = false
-  $scope.isRefreshing = false
-
-  $scope.refreshTimeline = function() {
-    $scope.isRefreshing = true
-    var options = {}
-    if ($scope.tweets.length > 0) {
-      options.since_id = $scope.tweets[0].id_str
+app.controller('TimelineController', function($scope, $rootScope, $api, $ui, $state, $templateCache) {
+  $scope.title = "Home"
+  $scope.hasMore = true;
+  $scope.activeSection('home')
+  $scope.loadMore = function() {
+    console.log('loadMore');
+    if ($api.isReady()) {
+      $scope.loggedIn()
+      $scope.refreshTimeline()
     }
+  }
+
+  $scope.refreshTimeline = function(options) {
+    $scope.startLoading()
+    options = options || {}
+// TODO:
+    if ($scope.tweets_order.length > 0) {
+      options.max_id = $scope.tweets_order[$scope.tweets_order.length-1]
+    }
+    options.count = 60
+
 
     $api.homeTimeline(options, function(error, data){
       if (error) {
@@ -135,16 +173,18 @@ app.controller('TimelineController', function($scope, $api, $ui) {
           $ui.alert('error', 'Sending Fail!!!',  "Something went wrong, Please try again.")
 
         $scope.$apply(function(){
-          $scope.isRefreshing = false
+          $scope.stopLoading()
         })
       } else {
         $scope.$apply(function(){
-          var items = JSON.parse(data).reverse()
-
+          var items = JSON.parse(data)
+          if (items.length == 0)
+            $scope.hasMore = false
           items.forEach(function(item){
-            $scope.tweets.push(item)
+            $scope.tweets[item.id_str] = item
           })
-          $scope.isRefreshing = false
+          $scope.updateOrder()
+          $scope.stopLoading()
         })
       }
     })
@@ -159,47 +199,100 @@ app.controller('TimelineController', function($scope, $api, $ui) {
        if (error) {
          console.log(error);
        } else {
-         $scope.isLoggedIn = true
+         $scope.loggedIn()
          ipc.send('oauth-tokens', localStorage.oauthTokens || "[]")
        }
      })
    }
-
-  $scope.click = function(e) {
-    e.preventDefault()
-    var el = $(e.target)
-    if ( el.is('.media') ) {
-      var w = window.open('/window.html#/image/'+btoa(el.data('url')),
-      {
-        // toolbar: false
-      })
-    } else if (el.is('[target="_blank"]')) {
-      shell.openExternal(el.attr('href'));
-    } else if (el.is('a')) {
-      if (el.is('.fa-star')) {
-        var id = el.parents('.tweet').attr('id')
-
-      }
-    }
-  }
 
 
 
   window.reload = function() {
     $scope.$apply(function(){
       if ($api.isReady()) {
-        $scope.isLoggedIn = true
+        $scope.loggedIn()
         $scope.refreshTimeline()
       }
     })
-    console.log($scope.tweets);
-  }
-  if ($api.isReady()) {
-    $scope.isLoggedIn = true
-    $scope.refreshTimeline()
   }
 });
+app.controller('UserController', function($scope, $state, $api){
+  $scope.userTweets = {}
+  $scope.userTweetsOrder = {}
+  $scope.user = $state.params.user
 
-app.controller('ImageController', function($scope,$routeParams) {
-    $scope.url = atob($routeParams.url);
+  $scope.hasMore = true;
+
+  $scope.loadMore = function() {
+    $scope.startLoading()
+    var options = {
+      screen_name: $state.params.id,
+      count: 60
+    }
+    if ($scope.userTweetsOrder.length > 0) {
+      options.max_id = $scope.userTweetsOrder.last()
+    }
+    $api.userTimeline(options, function(error, data){
+      if (!error) {
+        $scope.$apply(function(){
+          var items = JSON.parse(data).reverse()
+          items.forEach(function(item){
+            $scope.userTweets[item.id_str] = item
+          })
+          $scope.userTweetsOrder = Object.keys($scope.userTweets).sort().reverse()
+
+
+        })
+      }
+      $scope.stopLoading()
+    })
+  }
+
+
+})
+
+app.controller('MentionController', function($scope, $state, $api){
+  $scope.userTweets = {}
+  $scope.userTweetsOrder = {}
+  $scope.user = $state.params.user
+  $scope.activeSection('mentions')
+  $scope.hasMore = true;
+
+  $scope.loadMore = function() {
+    $scope.startLoading()
+    var options = {
+      screen_name: $state.params.id,
+      count: 60
+    }
+    if ($scope.userTweetsOrder.length > 0) {
+      options.max_id = $scope.userTweetsOrder.last()
+    }
+    $api.mentionTimeline(options, function(error, data){
+      if (!error) {
+        $scope.$apply(function(){
+          var items = JSON.parse(data).reverse()
+          console.log(items);
+          items.forEach(function(item){
+            $scope.userTweets[item.id_str] = item
+          })
+          $scope.userTweetsOrder = Object.keys($scope.userTweets).sort().reverse()
+
+
+        })
+      }
+      $scope.stopLoading()
+    })
+  }
+
+
+})
+
+app.controller('ImageController', function($scope,$state) {
+  $scope.url = atob($state.params.url);
+});
+app.controller('InstagramController', function($scope,$state, $sce) {
+  $scope.trustSrc = function(src) {
+    return $sce.trustAsResourceUrl(src);
+  }
+  $scope.url = $sce.trustAsResourceUrl(atob($state.params.url) + '/embed/?v=4');
 });

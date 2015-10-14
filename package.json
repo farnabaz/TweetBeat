@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "./node_modules/.bin/electron ."
+    "start": "gulp"
   },
   "repository": {
     "type": "git",
@@ -15,8 +15,13 @@
   "dependencies": {
     "angular": "^1.4.5",
     "electron-prebuilt": "^0.31.2",
+    "gulp": "^3.9.0",
+    "gulp-less": "^3.0.3",
     "jquery": "^2.1.4",
     "node-notifier": "^4.2.3",
     "oauth": "^0.9.13"
+  },
+  "devDependencies": {
+    "gulp-shell": "^0.5.0"
   }
 }

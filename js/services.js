@@ -3,10 +3,14 @@ angular.module('tweetbeat.services', [])
   var urls = {
     oauthUrl: "https://api.twitter.com/oauth/authenticate?oauth_token=",
     homeTimeline: "https://api.twitter.com/1.1/statuses/home_timeline.json",
+    userTimeline: "https://api.twitter.com/1.1/statuses/user_timeline.json",
+    mentionTimeline: "https://api.twitter.com/1.1/statuses/mentions_timeline.json",
     statusUpdate: "https://api.twitter.com/1.1/statuses/update.json",
     userStream: "https://userstream.twitter.com/1.1/user.json",
     favoriteCreate: "https://api.twitter.com/1.1/favorites/create.json",
     verify : "https://api.twitter.com/1.1/account/verify_credentials.json",
+    retweet: "https://api.twitter.com/1.1/statuses/retweet/:id.json",
+    upload: "https://upload.twitter.com/1.1/media/upload.json"
   }
   var BrowserWindow = Remote.require('browser-window'),
       OAuth = require('oauth').OAuth;
@@ -36,10 +40,24 @@ angular.module('tweetbeat.services', [])
         callback(error, data, response)
       })
     },
+    upload:function(file, callback) {
+      opt = {
+        media_data: file
+      }
+      this.isReady() && oauth.post(urls.upload, access[activeAccount].token, access[activeAccount].secret, opt, 'multipart/form-data', function(error, data, response){
+        callback(error, data, response)
+      })
+    },
     tweet: function(status, opt , callback) {
       opt = opt || {}
       opt.status = status
       this.isReady() && oauth.post(urls.statusUpdate, access[activeAccount].token, access[activeAccount].secret, opt, function(error, data, response){
+        callback(error, data, response)
+      })
+    },
+    retweet: function(id , callback) {
+      opt = {}
+      this.isReady() && oauth.post(urls.retweet.replace(':id', id), access[activeAccount].token, access[activeAccount].secret, opt, function(error, data, response){
         callback(error, data, response)
       })
     },
@@ -50,6 +68,18 @@ angular.module('tweetbeat.services', [])
     homeTimeline: function(opt, callback) {
       opt = opt || {}
       this.isReady() && oauth.get(urls.homeTimeline + '?' + $.param(opt), access[activeAccount].token, access[activeAccount].secret, function (error, data, response) {
+        callback(error, data, response)
+      })
+    },
+    userTimeline: function(opt, callback) {
+      opt = opt || {}
+      this.isReady() && oauth.get(urls.userTimeline + '?' + $.param(opt), access[activeAccount].token, access[activeAccount].secret, function (error, data, response) {
+        callback(error, data, response)
+      })
+    },
+    mentionTimeline: function(opt, callback) {
+      opt = opt || {}
+      this.isReady() && oauth.get(urls.mentionTimeline + '?' + $.param(opt), access[activeAccount].token, access[activeAccount].secret, function (error, data, response) {
         callback(error, data, response)
       })
     },
@@ -116,7 +146,7 @@ angular.module('tweetbeat.services', [])
      *  Show system alerts in current window
      **/
     alert: function(type, message, detail, callback){
-      Dialog.showMessageBox(remote.getCurrentWindow(), {
+      Dialog.showMessageBox(Remote.getCurrentWindow(), {
         buttons: [ "OK" ],
         type: type,
         message: message,
@@ -140,6 +170,43 @@ angular.module('tweetbeat.services', [])
         // when you should delete the corresponding element.
         win = null;
       })
+    },
+
+    replyTo: function(tweet) {
+      // Create the browser window.
+      var win = new BrowserWindow({
+        width: 330,
+        height: 150,
+        title: 'Replay',
+        'always-on-top': true,
+        resizable: false,
+        fullscreen: false,
+        show: false
+      });
+      // and load the index.html of the app.
+      win.loadUrl('app://tweetbeat.app/tweet.html')
+      win.webContents.on('did-finish-load', function() {
+        win.webContents.send('data', 'reply', tweet);
+        win.show();
+      });
+    },
+    retweet: function(tweet) {
+      // Create the browser window.
+      var win = new BrowserWindow({
+        width: 330,
+        height: 150,
+        title: 'Retweet',
+        'always-on-top': true,
+        resizable: false,
+        fullscreen: false,
+        show: false
+      });
+      // and load the index.html of the app.
+      win.loadUrl('app://tweetbeat.app/tweet.html')
+      win.webContents.on('did-finish-load', function() {
+        win.webContents.send('data', 'retweet', tweet);
+        win.show();
+      });
     },
     closeWindow: function(){
       Remote.getCurrentWindow().close()

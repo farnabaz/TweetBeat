@@ -1,0 +1,93 @@
+<header class="row profile">
+  <div class="header"  style="background-image:url({{user.profile_banner_url}})">
+    <div class="content">
+      <div class="image">
+        <figure>
+          <img ng-src="{{user | profile_image}}" alt="" />
+        </figure>
+      </div>
+      <div class="name">{{user.name}}</div>
+      <div class="screen_name">@{{user.screen_name}}</div>
+    </div>
+  </div>
+  <div class="box pad5">
+    <button class="btn">Follow</button>
+  </div>
+  <div class="box">
+    <ul class="bar">
+      <li>{{user.statuses_count}}<small>Tweets</small></li>
+      <li>{{user.friends_count}}<small>Following</small></li>
+      <li>{{user.followers_count}}<small>Followers</small></li>
+    </ul>
+  </div>
+
+</header>
+<div class="row">
+    <div class="col-xs-12 tweet-list" id="timeline" ng-click="click($event)" >
+      <div infinite-scroll='loadMore()' infinite-scroll-disabled='isRefreshing && hasMore' infinite-scroll-distance='1'>
+
+        <div class="row" ng-repeat="t in userTweetsOrder" ng-repeat-hooks ng-repeat-first="startExp()" ng-repeat-last="startExp()">
+
+          <div class="tweet {{userTweets[t].favorited ? 'favorited' : ''}} {{userTweets[t].retweeted ? 'retweeted' : ''}} l{{userTweets[t].lang}}"
+            id="{{userTweets[t].id_str}}">
+            <header class="fa fa-retweet" ng-if="userTweets[t].retweeted_status">
+              {{userTweets[t].user.name}} retweeted
+            </header>
+            <!-- Normal Tweet -->
+            <section ng-if="!userTweets[t].retweeted_status && !userTweets[t].quoted_status">
+              <div class="image">
+                <a href="#user"><img class="user-image" ng-src="{{userTweets[t].user | profile_image}}"></a>
+              </div>
+              <div class="content">
+                <div class="user"><strong>{{userTweets[t].user.name}}</strong> <small>@{{userTweets[t].user.screen_name}}</small></div>
+                <div class="text" ng-bind-html="userTweets[t] | tweetEntity"></div>
+              </div>
+            </section>
+            <!-- retweet -->
+            <section ng-if="userTweets[t].retweeted_status">
+                <div class="image">
+                  <img class="user-image" ng-src="{{userTweets[t].retweeted_status.user | profile_image}}">
+                </div>
+                <div class="content">
+                  <div class="user"><strong ng-bind-html="userTweets[t].retweeted_status.user.name | html"></strong> <small>@{{userTweets[t].retweeted_status.user.screen_name}}</small></div>
+                  <div class="text l{{userTweets[t].retweeted_status.lang}}" ng-bind-html="userTweets[t].retweeted_status | tweetEntity"></div>
+                </div>
+            </section>
+            <!-- quote -->
+            <section ng-if="userTweets[t].quoted_status">
+              <div class="image">
+                <img class="user-image" ng-src="{{userTweets[t].user | profile_image}}">
+              </div>
+              <div class="content">
+                <div class="user"><strong>{{userTweets[t].user.name}}</strong> <small>@{{userTweets[t].user.screen_name}}</small></div>
+                <div class="text l{{userTweets[t].lang}}" ng-bind-html="userTweets[t] | tweetEntity"></div>
+                <div class="tweet">
+                  <div class="content">
+                    <div class="user"><strong>{{userTweets[t].quoted_status.user.name}}</strong> <small>@{{userTweets[t].quoted_status.user.screen_name}}</small></div>
+                    <div class="text l{{userTweets[t].quoted_status.lang}}" ng-bind-html="userTweets[t].quoted_status | tweetEntity"></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <footer>
+              <ul >
+                <li><a href ng-click="favorite(t)"><i class="twi twi-favorite"></i><span>Favorite</span></a></li>
+                <li><a href ng-click="retweet(t)"><i class="twi twi-retweet"></i> <span>Retweet</span></a></li>
+                <li><a href ng-click="reply(t)"><i class="twi twi-reply"></i> <span>Reply</span></a></li>
+              </ul>
+            </footer>
+          </div>
+
+        </div>
+        <div class="loading" ng-if="isRefreshing && hasMore">
+          <img src="/images/loading-bars.svg" alt="" />
+        </div>
+      </div>
+        <!-- end tweet -->
+    <div>
+      <br/>
+      <input type="button" class="btn btn-info" id="load-more" ng-click="refreshTimeline(userTweets[userTweets.length-1].id)" ng-show="connectedTwitter" value="Load More"/>
+    </div>
+  </div>
+</div>
