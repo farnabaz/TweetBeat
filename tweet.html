@@ -10,14 +10,20 @@
       font-size: {{settings['font-size']}};
       box-sizing: border-box;
     }
+    .CodeMirror-scroll {
+      min-height:88px;
+    }
     .CodeMirror {
       position: fixed !important ;
       font-family: {{settings['font-family']}} !important;
       font-size: {{settings['font-size']}} !important;
       height: auto !important;
+      bottom:auto;
+      min-height:88px;
     }
     {}
     </style>
+    <link rel="stylesheet" href="bower_components/codemirror/lib/codemirror.css" media="screen" charset="utf-8">
   </head>
   <body class="{{settings['style']}}">
     <div class="container" ng-controller="TweetController">
@@ -36,6 +42,9 @@
     <script type="text/javascript">
       var angular  = require('angular');
       var Remote = require('remote')
+      var currentWindow = Remote.getCurrentWindow()
+      var currentWidth = currentWindow.getSize()[0]
+      var editorOffsetFromBottom = 62
 
       var app = angular.module('tweetbeat', ['ngStorage', 'tweetbeat.services']);
       app.run(function($localStorage, $rootScope){
@@ -49,6 +58,29 @@
       });
       app.controller('TweetController', function($scope, $ui, $api) {
         $scope.media = []
+
+        $scope.discard = function() {
+          Remote.require('dialog').showMessageBox(Remote.getCurrentWindow(), {
+            buttons: [ "Discard", "Cancel" ],
+            type: 'error',
+            message: "Are you sure you want to discard this unsaved tweet?",
+            detail: "Your tweet will be lost."
+          }, function(e){
+            if (e === 0) {
+              $scope.editor.setValue("")
+              currentWindow.close()
+            }
+          });
+        }
+        window.onbeforeunload = function(e) {
+          if ($scope.editor.getValue().length > 0) {
+          	e.returnValue = false
+            $scope.$apply(function() {
+              $scope.discard()
+            })
+          }
+        }
+
         // upload file
         if (window.File && window.FileList && window.FileReader) {
             var filedrag = document.body
@@ -94,19 +126,30 @@
             ]
           });
           $scope.editor = CodeMirror.fromTextArea(document.getElementById('status'), {
-            value:document.getElementById('status').value,
-            mode:  "tweetbeatmode",
+            mode: "tweetbeatmode",
             viewportMargin: Infinity,
-          	lineWrapping:true,
+          	lineWrapping: true,
             extraKeys: {
               "Cmd-Enter": function(instance) { !$scope.disabled && $scope.send() },
               "Ctrl-Enter": function(instance) { !$scope.disabled && $scope.send() },
+              "Esc": function(instance) { currentWindow.close()}
             }
           });
+          var charWidth = $scope.editor.defaultCharWidth(), basePadding = 4;
+          $scope.editor.on("renderLine", function(cm, line, elt) {
+            var off = CodeMirror.countColumn(line.text, null, cm.getOption("tabSize")) * charWidth;
+            elt.style.textIndent = "-" + off + "px";
+            elt.style.paddingLeft = (basePadding + off) + "px";
+          });
           $scope.editor.on('change', function(cm, data) {
-            $scope.$apply(function(){
-              $scope.status = cm.getValue()
-            })
+            if ($scope.status != cm.getValue())
+              $scope.$apply(function(){
+                $scope.status = cm.getValue()
+              })
+            // change window height
+            setTimeout(function(){
+              currentWindow.setSize(currentWidth, $scope.editor.getScrollInfo().height + editorOffsetFromBottom)
+            },1)
           });
           $scope.editor.focus()
         }
@@ -118,7 +161,10 @@
           // File save function call here
           if (action == 'reply') {
             $scope.$apply(function(){
+              $scope.status = "@" + tweet.user.screen_name + ' '
               $scope.editor.setValue("@" + tweet.user.screen_name + ' ')
+              // move cursor to end
+              $scope.editor.execCommand('goDocEnd')
               $scope.options.in_reply_to_status_id = tweet.id_str
             })
           } else if (action == 'retweet') {
@@ -211,14 +257,9 @@
       });
 
       </script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.5.0/codemirror.min.js"></script>
-      <script type="text/javascript" src="https://codemirror.net/addon/mode/simple.js"></script>
-
-      <script type="text/javascript">
-
-    </script>
     <script type="text/javascript" src="js/services.js"></script>
     <script type="text/javascript" src="bower_components/ngstorage/ngStorage.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.5.0/codemirror.min.css" media="screen" title="no title" charset="utf-8">
+    <script type="text/javascript" src="bower_components/codemirror/lib/codemirror.js"></script>
+    <script type="text/javascript" src="bower_components/codemirror/addon/mode/simple.js"></script>
   </body>
 </html>

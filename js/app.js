@@ -93,8 +93,8 @@ app.filter('tweetEntity', ['$sce', '$rootScope', function($sce, $rootScope){
   var el = document.createElement('p')
   return function(tweet) {
     var escapeHTML = function(text) {
-      el.innerHTML = text
-      return el.textContent
+      el.textContent = text
+      return el.innerHTML
     }
     var linkify_entities = function(tweet) {
         if (!(tweet.entities)) {
