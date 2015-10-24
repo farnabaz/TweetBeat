@@ -124,17 +124,20 @@ app.filter('tweetEntity', ['$sce', '$rootScope', function($sce, $rootScope){
             index_map[entry.indices[0]] = [entry.indices[1], function(text) {return "<a class='mention' title='"+escapeHTML(entry.name)+"' href='http://twitter.com/"+escapeHTML(entry.screen_name)+"'>"+escapeHTML(text)+"</a>"}]
         })
 
-        if (tweet.entities.media) {
-          Array.prototype.forEach.call(tweet.entities.media, function(entry, i) {
-              index_map[entry.indices[0]] = [entry.indices[1], function(text) {
-                if ($rootScope.settings['image-preview'])
-                  return "<div class='media' data-url='"
-                    + escapeHTML(entry.media_url)
-                    + "' style='background-image:url("+escapeHTML(entry.media_url)+":small)'></div>"
-                else
-                  return "<a title='"+escapeHTML(entry.name)+"' href='http://twitter.com/"+escapeHTML(entry.screen_name)+"'>"+escapeHTML(text)+"</a>"
-              }]
+        var media = tweet.entities.media
+        if (tweet.extended_entities && tweet.extended_entities.media)
+          media = tweet.extended_entities.media
+        if (media) {
+          var val = ""
+          Array.prototype.forEach.call(media, function(entry, i) {
+            if ($rootScope.settings['image-preview'])
+              val +=  "<div class='media' data-url='"
+                + escapeHTML(entry.media_url)
+                + "' style='background-image:url("+escapeHTML(entry.media_url)+":small)'></div>"
+            else
+              val +=  "<a title='"+escapeHTML(entry.name)+"' href='http://twitter.com/"+escapeHTML(entry.screen_name)+"'>"+escapeHTML(entry.display_url)+"</a>"
           })
+          index_map[media[0].indices[0]] = [media[0].indices[1], "<div class='medias num"+media.length+"'>" + val + "</div>" ]
         }
 
         var result = ""
@@ -150,7 +153,10 @@ app.filter('tweetEntity', ['$sce', '$rootScope', function($sce, $rootScope){
                 if (i > last_i) {
                     result += escapeHTML(tweet.text.substring(last_i, i))
                 }
-                result += func(tweet.text.substring(i, end))
+                if (typeof func === "string")
+                  result += func;
+                else
+                  result += func(tweet.text.substring(i, end))
                 i = end - 1
                 last_i = end
             }
