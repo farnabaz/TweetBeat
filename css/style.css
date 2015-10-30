@@ -6,6 +6,8 @@ body {
   overflow: hidden;
   background: #F5F8FA;
   box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
 }
 *,
 :before,
@@ -24,7 +26,7 @@ a {
 }
 a:hover,
 a:focus {
-  color: #2a6496;
+  color: #245682;
   text-decoration: underline;
 }
 a:focus {
@@ -54,18 +56,10 @@ a:focus {
 .user-image {
   border-radius: 3px;
   width: 48px;
+  height: 48px;
 }
 .block {
   display: block;
-}
-.len {
-  direction: ltr;
-  text-align: left;
-}
-.lfa .text,
-.lar .text {
-  direction: rtl;
-  text-align: right;
 }
 .menu {
   position: absolute;
@@ -110,6 +104,9 @@ a:focus {
   right: 0;
   overflow: scroll;
   bottom: 0;
+}
+#main.show-search {
+  top: 82px;
 }
 #main .loading {
   text-align: center;
@@ -172,16 +169,25 @@ a:focus {
   background-position: -100px 0px;
 }
 .favorited .twi.twi-favorite {
-  background-position: -65px 0px;
+  background-position: -65px 0px !important;
 }
 .retweeted .twi.twi-retweet {
-  background-position: -119px 0px;
+  background-position: -119px 0px !important;
 }
 .tweet {
   border-bottom: 1px solid #dde3e8;
   padding: 5px 10px;
   background: #fff;
   /*qoute*/
+}
+.tweet.lfa .text,
+.tweet.lar .text {
+  text-align: right;
+  direction: rtl;
+}
+.tweet.len .text {
+  text-align: left;
+  direction: ltr;
 }
 .tweet header {
   padding-left: 35px;
@@ -294,8 +300,17 @@ a:focus {
   border-radius: 5px;
   background: #fafafa;
 }
+.tweet .tweet.lfa .text,
+.tweet .tweet.lar .text {
+  text-align: right;
+  direction: rtl;
+}
+.tweet .tweet.len .text {
+  text-align: left;
+  direction: ltr;
+}
 .tweet .tweet .content {
-  width: auto;
+  width: 100%;
 }
 .tweet-list .ng-enter,
 .tweet-list .ng-leave {
@@ -320,8 +335,68 @@ a:focus {
   opacity: 1;
   height: 100px;
 }
+.medias {
+  height: 120px;
+}
+.medias .media {
+  float: left;
+  background-size: cover;
+}
+.medias.num2 div:nth-child(1) {
+  width: calc(50% - 2px);
+  height: 100%;
+  background-size: cover;
+  border-radius: 5px 0 0 5px;
+}
+.medias.num2 div:nth-child(2) {
+  width: 50%;
+  height: 100%;
+  background-size: cover;
+  border-radius: 0 5px 5px 0;
+  margin-left: 2px;
+}
+.medias.num3 div:nth-child(1) {
+  width: calc(50% - 2px);
+  height: 100%;
+  background-size: cover;
+  border-radius: 5px 0 0 5px;
+  margin-right: 2px;
+}
+.medias.num3 div:nth-child(2) {
+  width: 50%;
+  height: calc(50% - 1px);
+  background-size: cover;
+  border-radius: 0 5px 0 0;
+  margin-bottom: 2px;
+}
+.medias.num3 div:nth-child(3) {
+  width: 50%;
+  height: calc(50% - 1px);
+  background-size: cover;
+  border-radius: 0 0 5px 0;
+}
+.medias.num4 div {
+  width: calc(50% - 1px);
+  height: calc(50% - 1px);
+  background-size: cover;
+}
+.medias.num4 div:nth-child(1) {
+  border-radius: 5px 0 0 0;
+  margin-bottom: 2px;
+  margin-right: 2px;
+}
+.medias.num4 div:nth-child(2) {
+  border-radius: 0 5px 0 0;
+}
+.medias.num4 div:nth-child(3) {
+  border-radius: 0 0 0 5px;
+  margin-right: 2px;
+}
+.medias.num4 div:nth-child(4) {
+  border-radius: 0 0 5px 0;
+}
 .profile .header {
-  background-size: auto 100%;
+  background-size: cover;
   height: 160px;
   background-repeat: no-repeat;
   background-position: 50%;
@@ -343,6 +418,7 @@ a:focus {
 .profile .header img {
   display: block;
   width: 50px;
+  height: 50px;
   border-radius: 3px;
   background-color: #fff;
 }
@@ -360,4 +436,37 @@ a:focus {
   display: block;
   font-size: 0.7em;
   color: #A6B3BC;
+}
+#searchbar {
+  position: fixed;
+  left: 70px;
+  right: 0;
+  background: #fff;
+  top: 50px;
+  height: 0;
+  overflow: hidden;
+  transition: 0.15s;
+  border-bottom: 1px solid #1A1A1A;
+}
+#searchbar.show {
+  height: 30px;
+  border-bottom: 2px solid #1A1A1A;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.5);
+}
+#searchbar .action {
+  font-size: 20px;
+  border: 0;
+  width: 25px;
+  padding: 4px 0px 0px 3px;
+  float: left;
+  height: 30px;
+  color: #ccc;
+}
+#searchbar .query {
+  border: 0;
+  height: 30px;
+  margin: 0;
+  font-size: 15px;
+  width: calc(100% - 25px);
+  outline: 0;
 }

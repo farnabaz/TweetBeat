@@ -3,6 +3,10 @@ var shell = require('shell');
 
 //inject the twitterService into the controller
 app.controller('MainController', function($rootScope, $scope, $state, $api, $compile, $ui, $localStorage) {
+  $scope.searchForm = {
+    action: '@',
+    show: false
+  };
   $scope.isLoggedIn = false
   $scope.isRefreshing = false
   $scope.me = $localStorage.me || {}
@@ -29,6 +33,51 @@ app.controller('MainController', function($rootScope, $scope, $state, $api, $com
       // TODO: goto notifications
     })
   });
+  ipc.on('stream-quoted-tweet', function(item) {
+    $ui.notify(item.source.name + " quote one of your tweets", item.target_object.text, function(){
+      // TODO: goto notifications
+    })
+  });
+  ipc.on('menu-goto-user', function(){
+    $scope.$apply(function(){
+      $scope.searchForm.q = ''
+      $scope.searchForm.action = '@'
+      $scope.searchForm.show = true
+      document.querySelector('#searchbar .query').focus()
+    })
+  })
+  ipc.on('menu-tweet-search', function(){
+    $scope.$apply(function(){
+      $scope.searchForm.q = ''
+      $scope.searchForm.action = '?'
+      $scope.searchForm.show = true
+      document.querySelector('#searchbar .query').focus()
+    })
+  })
+  document.onkeyup = function(e) {
+    if (e.keyCode == 27) { // ESC
+      if ($scope.searchForm.show) {
+        $scope.$apply(function(){
+          $scope.searchForm.show = false
+        })
+      }
+    }
+  }
+  $scope.doSearch = function(data) {
+    if (!data.q)
+      return;
+    if (data.action == '@') {
+      $('#main').removeClass('back')
+      $state.go('user', {
+        id: data.q,
+        back: $state.params.title,
+        title: ""
+      });
+    }
+
+    $scope.searchForm.show = false
+  }
+
 
   $scope.tweets = {}; //array of tweets
   $scope.tweets_order = [];
@@ -39,6 +88,7 @@ app.controller('MainController', function($rootScope, $scope, $state, $api, $com
 
   $scope.favorite = function(tid) {
     var tweet = $scope.tweets[tid]
+    tweet = tweet.retweeted_status || tweet
     tweet.favorited = true
     $api.favoriteCreate(tweet, function(er, data, res){
       if (!er) {
@@ -59,7 +109,6 @@ app.controller('MainController', function($rootScope, $scope, $state, $api, $com
   }
   $scope.retweet = function(tid) {
     var tweet = $scope.tweets[tid]
-    tweet = tweet.retweeted_status || tweet
     $ui.retweet(tweet)
   }
 
@@ -112,8 +161,17 @@ app.controller('MainController', function($rootScope, $scope, $state, $api, $com
         title: user.name,
         user: user
       });
-    }
-     else {
+    } else if (el.is('.mention')) {
+        var match = el.attr('href').match(/https?:\/\/(www\.)?twitter.com\/([^\/]*)/i)
+        if (match) {
+          $('#main').removeClass('back')
+          $state.go('user', {
+            id: match[2],
+            back: $state.params.title,
+            title: ""
+          });
+        }
+    } else {
 
     }
   }
@@ -219,9 +277,20 @@ app.controller('TimelineController', function($scope, $rootScope, $api, $ui, $st
 app.controller('UserController', function($scope, $state, $api){
   $scope.userTweets = {}
   $scope.userTweetsOrder = {}
-  $scope.user = $state.params.user
+  $scope.user = $state.params.user || {screen_name:$state.params.id}
 
   $scope.hasMore = true;
+  var options = {
+    screen_name: $state.params.id,
+  }
+  $api.userInfo(options, function(error, data){
+    if (!error) {
+      $scope.$apply(function(){
+        $scope.user = JSON.parse(data)
+        $state.params.title = $scope.user.name;
+      })
+    }
+  })
 
   $scope.loadMore = function() {
     $scope.startLoading()

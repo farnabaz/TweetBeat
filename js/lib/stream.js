@@ -149,6 +149,6 @@ Stream.prototype.stream = function(params) {
 
     });
 
-    request.end();
+    // request.end();
 
 }

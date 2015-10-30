@@ -28,9 +28,9 @@
   <body class="{{settings['style']}}">
     <div class="container" ng-controller="TweetController">
       <textarea id="status"></textarea>
-      <div style="width:60px;text-align:center;">
+      <div class="user">
         <div><img class="user-image" ng-src="{{me | profile_image}}"></div>
-        <center><small>{{availableTextLength - status.length}}</small></center>
+        <center><small>{{availableTextLength - textLength}}</small></center>
       </div>
       <footer>
         <button type="button" ng-click="send()" ng-disabled="disabled" name="button">Tweet</button>
@@ -40,8 +40,10 @@
 
     </div>
     <script type="text/javascript">
-      var angular  = require('angular');
-      var Remote = require('remote')
+      var angular  = require('angular'),
+          Remote = require('remote'),
+          twitter= require('twitter-text')
+
       var currentWindow = Remote.getCurrentWindow()
       var currentWidth = currentWindow.getSize()[0]
       var editorOffsetFromBottom = 62
@@ -59,6 +61,10 @@
       app.controller('TweetController', function($scope, $ui, $api) {
         $scope.media = []
 
+        $scope.forceClose = function() {
+          window.onbeforeunload = null;
+          $ui.closeWindow()
+        }
         $scope.discard = function() {
           Remote.require('dialog').showMessageBox(Remote.getCurrentWindow(), {
             buttons: [ "Discard", "Cancel" ],
@@ -67,17 +73,14 @@
             detail: "Your tweet will be lost."
           }, function(e){
             if (e === 0) {
-              $scope.editor.setValue("")
-              currentWindow.close()
+              $scope.forceClose();
             }
           });
         }
         window.onbeforeunload = function(e) {
           if ($scope.editor.getValue().length > 0) {
           	e.returnValue = false
-            $scope.$apply(function() {
-              $scope.discard()
-            })
+            $scope.discard()
           }
         }
 
@@ -120,15 +123,21 @@
           // codemirror
           CodeMirror.defineSimpleMode("tweetbeatmode", {
             start: [
-              {regex: /[a-z0-9_\.-]+@[\da-z\.-]+\.[a-z\.]{2,6}/, token: "keyword"},
-          		{regex: /https?:\/\/?[\da-z\.-]+\.[a-z\.]{2,6}([\/\w\?\=\.-]*)*\/?/, token: "keyword"},
-              {regex: /\s#[^#\s,;]+|\s@[^\s]+|^#[^#\s,;]+|^@[^\s]+/, token: "keyword"}
+              {regex: /\s[a-z0-9_\.-]+@[\da-z\.-]+\.[a-z\.]{2,6}/, token: "keyword"},
+              {regex: /[a-z0-9_\.-]+@[\da-z\.-]+\.[a-z\.]{2,6}/, token: "keyword", sol:true},
+          		{regex: /https?:\/\/?[\da-z\.-]+\.[a-z\.]{2,6}([\/\w\?\#\=\.-]*)*\/?/g, sol:true,  token: "keyword"},
+          		{regex: /\shttps?:\/\/?[\da-z\.-]+\.[a-z\.]{2,6}([\/\w\?\#\=\.-]*)*\/?/, token: "keyword"},
+              {regex: /\s\@[a-zA-Z0-9_]+/, token: "keyword"},// username
+              {regex: /\@[a-zA-Z0-9_]+/, token: "keyword", sol:true},// username
+              {regex: /\s\#[0-9a-zA-Z_]+/, token: "keyword"},
+              {regex: /\s\#[0-9a-zA-Z_]+/, token: "keyword", sol: true}
             ]
           });
           $scope.editor = CodeMirror.fromTextArea(document.getElementById('status'), {
             mode: "tweetbeatmode",
             viewportMargin: Infinity,
           	lineWrapping: true,
+            cursorHeight: '20px',
             extraKeys: {
               "Cmd-Enter": function(instance) { !$scope.disabled && $scope.send() },
               "Ctrl-Enter": function(instance) { !$scope.disabled && $scope.send() },
@@ -142,10 +151,9 @@
             elt.style.paddingLeft = (basePadding + off) + "px";
           });
           $scope.editor.on('change', function(cm, data) {
-            if ($scope.status != cm.getValue())
-              $scope.$apply(function(){
-                $scope.status = cm.getValue()
-              })
+            $scope.$apply(function(){
+              $scope.textLength = twitter.getTweetLength(cm.getValue())
+            })
             // change window height
             setTimeout(function(){
               currentWindow.setSize(currentWidth, $scope.editor.getScrollInfo().height + editorOffsetFromBottom)
@@ -160,29 +168,27 @@
         require('ipc').on('data', function(action, tweet) {
           // File save function call here
           if (action == 'reply') {
-            $scope.$apply(function(){
-              $scope.status = "@" + tweet.user.screen_name + ' '
               $scope.editor.setValue("@" + tweet.user.screen_name + ' ')
               // move cursor to end
               $scope.editor.execCommand('goDocEnd')
+              tweet = tweet.retweeted_status || tweet
               $scope.options.in_reply_to_status_id = tweet.id_str
-            })
           } else if (action == 'retweet') {
             $scope.$apply(function(){
-              $scope.tweet = tweet;
+              $scope.tweet = tweet.retweeted_status || tweet;
               $scope.availableTextLength -= 23;
               $scope.retweet = "https://twitter.com/"+tweet.user.screen_name+"/status/"+tweet.id_str
               $scope.disabled = false
             })
           }
         });
-        $scope.status = ""
+        $scope.textLength = 0
         $scope.availableTextLength = 140;
         $scope.options = {}
         $scope.retweet = false
 
         $scope.$watch(function(){
-          return $scope.availableTextLength - $scope.status.length
+          return $scope.availableTextLength - $scope.textLength
         }, function(newValue, oldValue){
           if (newValue < 0 || (newValue == 140))
             $scope.disabled = true
@@ -221,8 +227,9 @@
             //     }
             //   })
             // }
-            if ($scope.retweet && !$scope.status && !$scope.options.media) {
+            if ($scope.retweet && $scope.textLength == 0 && !$scope.options.media) {
               $api.retweet($scope.tweet.id_str, function(error, data, response){
+                console.log(error, data, response);
                 if (error) {
                   var data = JSON.parse(error.data)
                   if ( data.errors && data.errors[0] )
@@ -231,12 +238,13 @@
                     $ui.alert('error', 'Sending Fail!!!',  "Something went wrong, Please try again.")
                   $ui.showWindow()
                 } else {
-                  $ui.closeWindow()
+                  $scope.forceClose()
                 }
               })
             } else {
-              var text = $scope.status + ($scope.retweet ? " " + $scope.retweet : "")
+              var text = $scope.editor.getValue() + ($scope.retweet ? " " + $scope.retweet : "")
               $api.tweet(text, $scope.options, function(error, data, response){
+                console.log(error, data, response);
                 if (error) {
                   var data = JSON.parse(error.data)
                   if ( data.errors && data.errors[0] )
@@ -245,7 +253,7 @@
                     $ui.alert('error', 'Sending Fail!!!',  "Something went wrong, Please try again.")
                   $ui.showWindow()
                 } else {
-                  $ui.closeWindow()
+                  $scope.forceClose()
                 }
               })
             }

@@ -76,7 +76,7 @@ var Internal = {
         } else if (data.event == "follow") {
           TweetBeat.mainWindow().webContents.send('stream-follow', data)
         } else if (data.event == "quoted_tweet") {
-          TweetBeat.mainWindow().webContents.send('stream-quoted_tweet', data)
+          TweetBeat.mainWindow().webContents.send('stream-quoted-tweet', data)
         } else {
           console.log(data);
         }

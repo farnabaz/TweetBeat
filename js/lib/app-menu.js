@@ -78,6 +78,15 @@ module.exports = {
         label: 'Tweet',
         submenu: [
           {
+            label: 'Search',
+            accelerator: 'CmdOrCtrl+F',
+            click: function(item, focusedWindow) {
+              if (focusedWindow)
+                focusedWindow.webContents.send("menu-tweet-search");
+            }
+          },
+          { type: 'separator' },
+          {
             label: 'Toggle Full Screen',
             accelerator: (function() {
               if (process.platform == 'darwin')

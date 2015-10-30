@@ -68,6 +68,13 @@
       <div id="main" >
         <div ui-view id="view" class="slide"></div>
       </div>
+
+      <form id="searchbar" class="{{searchForm.show ? 'show' : 'hide'}}" method="post" ng-model="searchForm" ng-submit="doSearch(searchForm)">
+        <input type="hidden" ng-model="searchForm.action" value="@"/>
+        <span class="action">{{searchForm.action}}</span>
+        <input type="text" class="query" ng-model="searchForm.q" value=""/>
+        <button type="submit"></button>
+      </form>
     </div>
   </body>
 </html>

@@ -7,6 +7,7 @@ angular.module('tweetbeat.services', [])
     mentionTimeline: "https://api.twitter.com/1.1/statuses/mentions_timeline.json",
     statusUpdate: "https://api.twitter.com/1.1/statuses/update.json",
     userStream: "https://userstream.twitter.com/1.1/user.json",
+    userInfo: "https://api.twitter.com/1.1/users/show.json",
     favoriteCreate: "https://api.twitter.com/1.1/favorites/create.json",
     verify : "https://api.twitter.com/1.1/account/verify_credentials.json",
     retweet: "https://api.twitter.com/1.1/statuses/retweet/:id.json",
@@ -74,6 +75,12 @@ angular.module('tweetbeat.services', [])
     userTimeline: function(opt, callback) {
       opt = opt || {}
       this.isReady() && oauth.get(urls.userTimeline + '?' + $.param(opt), access[activeAccount].token, access[activeAccount].secret, function (error, data, response) {
+        callback(error, data, response)
+      })
+    },
+    userInfo: function(opt, callback) {
+      opt = opt || {}
+      this.isReady() && oauth.get(urls.userInfo + '?' + $.param(opt), access[activeAccount].token, access[activeAccount].secret, function (error, data, response) {
         callback(error, data, response)
       })
     },

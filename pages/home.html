@@ -10,7 +10,7 @@
 
         <div class="row" ng-repeat="t in tweets_order">
 
-          <div class="tweet {{tweets[t].favorited ? 'favorited' : ''}} {{tweets[t].retweeted ? 'retweeted' : ''}} l{{tweets[t].lang}}"
+          <div class="tweet {{(tweets[t].retweeted_status||tweets[t]).favorited ? 'favorited' : ''}} {{tweets[t].retweeted ? 'retweeted' : ''}} l{{tweets[t].lang}}"
             id="{{tweets[t].id_str}}">
             <header class="fa fa-retweet" ng-if="tweets[t].retweeted_status">
               {{tweets[t].user.name}} retweeted
@@ -42,11 +42,11 @@
               </div>
               <div class="content">
                 <div class="user"><strong>{{tweets[t].user.name}}</strong> <small>@{{tweets[t].user.screen_name}}</small></div>
-                <div class="text l{{tweets[t].lang}}" ng-bind-html="tweets[t] | tweetEntity"></div>
-                <div class="tweet">
+                <div class="text" ng-bind-html="tweets[t] | tweetEntity"></div>
+                <div class="tweet l{{tweets[t].quoted_status.lang}}">
                   <div class="content">
                     <div class="user"><strong>{{tweets[t].quoted_status.user.name}}</strong> <small>@{{tweets[t].quoted_status.user.screen_name}}</small></div>
-                    <div class="text l{{tweets[t].quoted_status.lang}}" ng-bind-html="tweets[t].quoted_status | tweetEntity"></div>
+                    <div class="text" ng-bind-html="tweets[t].quoted_status | tweetEntity"></div>
                   </div>
                 </div>
               </div>
