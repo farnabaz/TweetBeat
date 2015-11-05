@@ -130,7 +130,7 @@
               {regex: /\s\@[a-zA-Z0-9_]+/, token: "keyword"},// username
               {regex: /\@[a-zA-Z0-9_]+/, token: "keyword", sol:true},// username
               {regex: /\s\#[0-9a-zA-Z_]+/, token: "keyword"},
-              {regex: /\s\#[0-9a-zA-Z_]+/, token: "keyword", sol: true}
+              {regex: /\#[0-9a-zA-Z_]+/, token: "keyword", sol: true}
             ]
           });
           $scope.editor = CodeMirror.fromTextArea(document.getElementById('status'), {

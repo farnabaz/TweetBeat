@@ -265,57 +265,6 @@ a {
       width: 100%;
     }
   }
-  footer {
-    margin-left: 55px;
-    margin-top: 5px;
-    &:after {
-      content: ' ';
-      display: block;
-      clear: both;
-    }
-    li {
-      float: left;
-      list-style: none;
-      position: relative;
-      .menu {
-        top: 0;
-        left: 0;
-        display: none;
-      }
-      &:active .menu {
-        display: block;
-      }
-    }
-    a {
-      padding: 5px;
-      font-size: 12px;
-      color: rgba(0,0,0, 0.3);
-      display: flex;
-      text-decoration: none;
-
-
-      &:hover {
-        color: rgba(0,0,0, 0.6);
-        // hover icons
-        .twi {
-          &.twi-retweet {
-          	background-position: -100px 0px;
-          }
-          &.twi-favorite {
-          	background-position: -49px 0px;
-          }
-          &.twi-reply {
-          	background-position: -16px 0px;
-          }
-        }
-      }
-      span {
-        margin-top: 2px;
-        margin-left: 2px;
-      }
-    }
-  }
-
   .media {
     width: 100%;
     height: 120px;
@@ -351,6 +300,12 @@ a {
     .content {
       width: 100%;
     }
+  }
+  .tweet-actions {
+    margin-left: 55px;
+    margin-top: 5px;
+    border-bottom: 0;
+    padding: 0;
   }
 }
 .tweet-list {
@@ -477,22 +432,76 @@ a {
       background-color: #fff;
     }
   }
+}
+.bar-list {
+  border-top: 1px solid #A6B3BC;
+  border-bottom: 1px solid #A6B3BC;
+  background-color: #fff;
 
-  .bar {
-    border-top: 1px solid #A6B3BC;
-    border-bottom: 1px solid #A6B3BC;
+  li {
+    display: inline-block;
+    color: #333;
+    padding: 10px;
+    border-right: 1px solid #A6B3BC;
+    font-weight: bold;
 
-    li {
-      display: inline-block;
-      color: #333;
-      padding: 10px;
-      border-right: 1px solid #A6B3BC;
+    small {
+      display: block;
+      font-size: 0.7em;
+      color: #A6B3BC;
+      font-weight: normal;
+    }
+  }
+}
+.tweet-actions {
+  background: #fff;
+  border-bottom: 1px solid #A6B3BC;
+  padding: 5px 10px;
 
-      small {
-        display: block;
-        font-size: 0.7em;
-        color: #A6B3BC;
+  &:after {
+    content: ' ';
+    display: block;
+    clear: both;
+  }
+  li {
+    float: left;
+    list-style: none;
+    position: relative;
+    .menu {
+      top: 0;
+      left: 0;
+      display: none;
+    }
+    &:active .menu {
+      display: block;
+    }
+  }
+  a {
+    padding: 5px;
+    font-size: 12px;
+    color: rgba(0,0,0, 0.3);
+    display: flex;
+    text-decoration: none;
+
+
+    &:hover {
+      color: rgba(0,0,0, 0.6);
+      // hover icons
+      .twi {
+        &.twi-retweet {
+          background-position: -100px 0px;
+        }
+        &.twi-favorite {
+          background-position: -49px 0px;
+        }
+        &.twi-reply {
+          background-position: -16px 0px;
+        }
       }
+    }
+    span {
+      margin-top: 2px;
+      margin-left: 2px;
     }
   }
 }

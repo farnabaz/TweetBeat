@@ -34,6 +34,16 @@ app.run(function($localStorage, $rootScope){
 // configure our routes
 app.config(function($urlRouterProvider, $stateProvider) {
     $urlRouterProvider.otherwise('/home')
+    $stateProvider.state('status', {
+      url:'/status/:id',
+      templateUrl : 'pages/status.html',
+      controller  : 'StatusController',
+      params: {
+        title: 'Status',
+        back: false,
+        user: false
+      }
+    })
     $stateProvider.state('user', {
       url:'/user/:id',
       templateUrl : 'pages/user.html',
@@ -85,28 +95,30 @@ app.filter('html', ['$sce', function($sce){
 }]);
 app.filter('profile_image', ['$sce', function($sce){
     return function(user) {
-        return (user.profile_image_url || "").replace('_normal', '_bigger');
+      var url = user && user.profile_image_url || ""
+        return url.replace('_normal', '_bigger');
     };
 }]);
 
 app.filter('tweetEntity', ['$sce', '$rootScope', '$localStorage', function($sce, $rootScope, $localStorage){
   var el = document.createElement('p')
+  var emojiRanges = new RegExp([
+     '\ud83c[\udf00-\udfff]', // 🌀U+1F300 to U+1F3FF🗿
+     '\ud83d[\udc00-\ude4f]', // U+1F400 to U+1F64F
+     '\ud83d[\ude80-\udeff]',  // U+1F680 to U+1F6FF
+    ].join('|'), 'g');
   return function(tweet) {
     var escapeHTML = function(text) {
       el.textContent = text
-      return el.innerHTML
+      return text//el.innerHTML
     }
     var linkify_entities = function(tweet) {
       if (!(tweet.entities)) {
         return escapeHTML(tweet.text)
       }
-      var ranges = [
-       '\ud83c[\udf00-\udfff]', // 🌀U+1F300 to U+1F3FF🗿
-       '\ud83d[\udc00-\ude4f]', // U+1F400 to U+1F64F
-       '\ud83d[\ude80-\udeff]'  // U+1F680 to U+1F6FF
-      ];
+      var emojis = [];
 
-      var __text = tweet.text.replace(new RegExp(ranges.join('|'), 'g'), function(match, offset, string){
+      var __text = tweet.text.replace(emojiRanges, function(match, offset, string){
         emojis.push({
           offset: offset,
           char: match
@@ -117,7 +129,7 @@ app.filter('tweetEntity', ['$sce', '$rootScope', '$localStorage', function($sce,
       // This is very naive, should find a better way to parse this
       var index_map = {}
       Array.prototype.forEach.call(tweet.entities.urls, function(entry, i) {
-        if (tweet.quoted_status && entry.expanded_url.match("https?:\/\/(www\.)?twitter\.com(.*)"+tweet.quoted_status.id_str)) {
+        if (!tweet.is_quote_status && tweet.quoted_status && entry.expanded_url.match("https?:\/\/(www\.)?twitter\.com(.*)"+tweet.quoted_status.id_str)) {
           index_map[entry.indices[0]] = [entry.indices[1], function(text) {
             return ""; // remove qoute status link
           }];
@@ -181,7 +193,7 @@ app.filter('tweetEntity', ['$sce', '$rootScope', '$localStorage', function($sce,
               var end = ind[0]
               var func = ind[1]
               if (i > last_i) {
-                  result += escapeHTML(__text.substring(last_i, i))
+                result += escapeHTML(__text.substring(last_i, i))
               }
               if (typeof func === "string")
                 result += func;

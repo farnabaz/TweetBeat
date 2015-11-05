@@ -13,7 +13,7 @@
   <div class="box pad5">
     <button class="btn">Follow</button>
   </div>
-  <div class="box">
+  <div class="bar-list">
     <ul class="bar">
       <li>{{user.statuses_count}}<small>Tweets</small></li>
       <li>{{user.friends_count}}<small>Following</small></li>
@@ -70,7 +70,7 @@
               </div>
             </section>
 
-            <footer>
+            <footer class="tweet-actions">
               <ul >
                 <li><a href ng-click="favorite(t)"><i class="twi twi-favorite"></i><span>Favorite</span></a></li>
                 <li><a href ng-click="retweet(t)"><i class="twi twi-retweet"></i> <span>Retweet</span></a></li>

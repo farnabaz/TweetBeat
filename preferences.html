@@ -7,14 +7,14 @@
   <body class="settings-view" ng-controller="PreferencesController">
 
     <main>
+      <input id="tab3" type="radio" name="tabs">
+      <label for="tab3">General</label>
+
       <input id="tab1" type="radio" name="tabs" checked>
       <label for="tab1">Media</label>
 
       <input id="tab2" type="radio" name="tabs">
       <label for="tab2">Network</label>
-
-      <input id="tab3" type="radio" name="tabs">
-      <label for="tab3">Dropbox</label>
 
       <input id="tab4" type="radio" name="tabs">
       <label for="tab4">Drupal</label>
@@ -48,19 +48,20 @@
       <label for="settings.video-preview">
         <div class="setting-title">Proxy configuration</div>
       </label>
-        <input id="setting.proxy-ip" type="text" ng-model="settings['proxy-ip']" placeholder="ip/domain">
+        <input id="setting.tweet-font-family" type="text" ng-model="settings['proxy-ip']" placeholder="ip/domain">
         <input id="setting.proxy-port" type="number" ng-model="settings['proxy-port']" placeholder="port">
       <div class="setting-description"></div>
     </div>
   </section>
 
   <section id="content3">
-    <p>
-      Bacon ipsum dolor sit amet beef venison beef ribs kielbasa. Sausage pig leberkas, t-bone sirloin shoulder bresaola. Frankfurter rump porchetta ham. Pork belly prosciutto brisket meatloaf short ribs.
-    </p>
-    <p>
-      Brisket meatball turkey short loin boudin leberkas meatloaf chuck andouille pork loin pastrami spare ribs pancetta rump. Frankfurter corned beef beef tenderloin short loin meatloaf swine ground round venison.
-    </p>
+    <div class="text">
+      <label for="settings.tweet-font-family">
+        <div class="setting-title">Tweet Font Family</div>
+      </label>
+        <input id="setting.tweet-font-family" type="text" ng-model="settings['tweet-font-family']" placeholder="ip/domain">
+      <div class="setting-description">lnln</div>
+    </div>
   </section>
 
   <section id="content4">

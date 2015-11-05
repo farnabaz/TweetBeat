@@ -36,7 +36,7 @@ section {
   display: none;
   padding: 20px;
 }
-input {
+input[name^="tabs"] {
   display: none;
 }
 label[for^="tab"] {

@@ -1,0 +1,56 @@
+<div class="tweet {{(status.retweeted_status||status).favorited ? 'favorited' : ''}} {{status.retweeted ? 'retweeted' : ''}} l{{status.lang}}"
+  id="{{status.id_str}}">
+  <header class="fa fa-retweet" ng-if="status.retweeted_status">
+    {{status.user.name}} retweeted
+  </header>
+  <!-- Normal Tweet -->
+  <section ng-if="!status.retweeted_status && !status.quoted_status">
+    <div class="image">
+      <a href="#user"><img class="user-image" ng-src="{{status.user | profile_image}}"></a>
+    </div>
+    <div class="content">
+      <div class="user"><strong>{{status.user.name}}</strong> <small>@{{status.user.screen_name}}</small></div>
+      <div class="text" ng-bind-html="status | tweetEntity"></div>
+    </div>
+  </section>
+  <!-- retweet -->
+  <section ng-if="status.retweeted_status">
+      <div class="image">
+        <img class="user-image" ng-src="{{status.retweeted_status.user | profile_image}}">
+      </div>
+      <div class="content">
+        <div class="user"><strong ng-bind-html="status.retweeted_status.user.name | html"></strong> <small>@{{status.retweeted_status.user.screen_name}}</small></div>
+        <div class="text l{{status.retweeted_status.lang}}" ng-bind-html="status.retweeted_status | tweetEntity"></div>
+      </div>
+  </section>
+  <!-- quote -->
+  <section ng-if="status.quoted_status">
+    <div class="image">
+      <img class="user-image" ng-src="{{status.user | profile_image}}">
+    </div>
+    <div class="content">
+      <div class="user"><strong>{{status.user.name}}</strong> <small>@{{status.user.screen_name}}</small></div>
+      <div class="text" ng-bind-html="status | tweetEntity"></div>
+      <div class="tweet l{{status.quoted_status.lang}}">
+        <div class="content">
+          <div class="user"><strong>{{status.quoted_status.user.name}}</strong> <small>@{{status.quoted_status.user.screen_name}}</small></div>
+          <div class="text" ng-bind-html="status.quoted_status | tweetEntity"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="bar-list">
+  <ul class="bar">
+    <li>{{(status.retweeted_status||status).retweet_count}}<small>Retweets</small></li>
+    <li>{{(status.retweeted_status||status).favorite_count}}<small>Favorites</small></li>
+  </ul>
+</div>
+<footer class="tweet-actions">
+  <ul >
+    <li><a href ng-click="favorite(t)"><i class="twi twi-favorite"></i><span>Favorite</span></a></li>
+    <li><a href ng-click="retweet(t)"><i class="twi twi-retweet"></i> <span>Retweet</span></a></li>
+    <li><a href ng-click="reply(t)"><i class="twi twi-reply"></i> <span>Reply</span></a></li>
+  </ul>
+</footer>

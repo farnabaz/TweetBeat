@@ -171,8 +171,12 @@ app.controller('MainController', function($rootScope, $scope, $state, $api, $com
             title: ""
           });
         }
-    } else {
-
+    } else if (el.is('div.text')){
+      $state.go('status', {
+        id: el.parents('.tweet').attr('id'),
+        back: $state.params.title,
+        title: ""
+      });
     }
   }
 
@@ -355,6 +359,24 @@ app.controller('MentionController', function($scope, $state, $api){
 
 
 })
+/*
+ * StatusController
+ */
+ app.controller('StatusController', function($scope, $state, $api){
+    $scope.status = $scope.tweets[$state.params.id] || {};
+    var id = $state.params.id
+    if (id) {
+      $api.status(id, function(error, data){
+        $scope.$apply(function(){
+          if (!error) {
+            $scope.status = JSON.parse(data)
+            console.log($scope.status);
+          }
+        })
+      })
+    }
+})
+
 
 app.controller('ImageController', function($scope,$state) {
   $scope.url = atob($state.params.url);

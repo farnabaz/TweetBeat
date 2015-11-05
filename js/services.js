@@ -11,7 +11,10 @@ angular.module('tweetbeat.services', [])
     favoriteCreate: "https://api.twitter.com/1.1/favorites/create.json",
     verify : "https://api.twitter.com/1.1/account/verify_credentials.json",
     retweet: "https://api.twitter.com/1.1/statuses/retweet/:id.json",
-    upload: "https://upload.twitter.com/1.1/media/upload.json"
+    upload: "https://upload.twitter.com/1.1/media/upload.json",
+
+    // GET
+    status: "https://api.twitter.com/1.1/statuses/show/:id.json"
   }
   var BrowserWindow = Remote.require('browser-window'),
       OAuth = require('oauth').OAuth;
@@ -65,6 +68,11 @@ angular.module('tweetbeat.services', [])
     isReady: function(account) {
       account = account || activeAccount
       return !!access[account]
+    },
+    status: function(id, callback) {
+      this.isReady() && oauth.get(urls.status.replace(':id', id), access[activeAccount].token, access[activeAccount].secret, function (error, data, response) {
+        callback(error, data, response)
+      })
     },
     homeTimeline: function(opt, callback) {
       opt = opt || {}
