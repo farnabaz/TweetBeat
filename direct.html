@@ -24,15 +24,7 @@
       <textarea id="heightHelper" ng-model="status" ng-trim="false"></textarea>
       <div class="user">
         <div><img class="user-image" ng-src="{{me | profile_image}}"></div>
-        <center><small>{{availableTextLength - textLength}}</small></center>
-      </div>
-      <div id="retweet" ng-show="tweet">
-        <div class="quote l{{tweet.lang}}">
-          <div class="content">
-            <div class="user"><strong>{{tweet.user.name}}</strong> <small>@{{tweet.user.screen_name}}</small></div>
-            <div class="text">{{tweet.text}}</div>
-          </div>
-        </div>
+        <div><img class="user-image" ng-src="{{me | profile_image}}"></div>
       </div>
       <footer>
         <button type="button" ng-click="send()" ng-disabled="disabled" name="button">Tweet</button>
@@ -88,48 +80,32 @@
 
         // upload file
         if (window.File && window.FileList && window.FileReader) {
-            var filedrag = document.querySelector('html')
-            var filedrop = document.querySelector('.drop-area')
+            var filedrag = document.body
             // is XHR2 available?
             var xhr = new XMLHttpRequest();
             if (xhr.upload) {
                 filedrag.ondrop = handler
-                filedrag.ondragover = function (e) {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  filedrop.style.display = 'block'
-                }
-                filedrop.ondragleave = function (e) {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  filedrop.style.display = 'none'
-                }
             }
         }
         function handler(e) {
             // cancel event and hover styling
             e.stopPropagation();
             e.preventDefault();
-            document.querySelector('.drop-area').style.display = 'none'
             var files = e.dataTransfer.files || e.originalEvent.target.files || e.originalEvent.dataTransfer.files;
 
             for(index in files) {
               var file = files[index]
-              if (file.type && file.type.match(/image/)
-                && document.querySelectorAll('#media i[data-path="'+file.path+'"]').length == 0
-                && document.querySelectorAll('#media i').length < 4) {
+              if (file.type && file.type.match(/image/) && document.querySelectorAll('#media i').length < 5) {
                 showImage(file);
               }
             }
         }
         function showImage(f, id) {
           var img = document.createElement('i');
-          img.innerHTML = '<span onclick="this.parentNode.remove()">✕</span>'
           document.getElementById('media').appendChild(img)
           var reader = new FileReader();
           reader.onloadend = function() {
             img.style.backgroundImage = 'url('+reader.result+')'
-            img.setAttribute('data-path', f.path)
             $scope.$apply(function(){
               $scope.availableTextLength -= 23;
             })
@@ -167,38 +143,12 @@
           textArea.focus()
         }
 
-
-
-        // Inside the menu callback
-        require('ipc').on('data', function(action, tweet) {
-          // File save function call here
-          if (action == 'reply') {
-              $scope.$apply(function(){
-                $scope.status = "@" + tweet.user.screen_name + ' ';
-                tweet = tweet.retweeted_status || tweet
-                $scope.options.in_reply_to_status_id = tweet.id_str
-              })
-          } else if (action == 'retweet') {
-            $scope.$apply(function(){
-              $scope.tweet = tweet.retweeted_status || tweet;
-              $scope.availableTextLength -= 23;
-              $scope.retweet = "https://twitter.com/"+tweet.user.screen_name+"/status/"+tweet.id_str
-              $scope.disabled = false
-              setTimeout(function(){
-                editorOffsetFromBottom += document.getElementById('retweet').clientHeight;
-                currentWindow.setSize(currentWidth, $scope.heightHelper.scrollHeight + editorOffsetFromBottom)
-              }, 1)
-            })
-          }
-        });
         $scope.textLength = 0
-        $scope.availableTextLength = 140;
         $scope.options = {}
-        $scope.retweet = false
         $scope.status = ""
 
         $scope.$watch(function(){
-          return $scope.availableTextLength - twitter.getTweetLength($scope.status)
+          return twitter.getTweetLength($scope.status)
         }, function(newValue, oldValue){
           $scope.textLength = twitter.getTweetLength($scope.status)
           setTimeout(function(){
@@ -217,24 +167,19 @@
         $scope.send = function() {
           if ($api.isReady()) {
             $ui.hideWindow()
-            var images = document.querySelectorAll('#media i');
-
-            if (images[0] && images[0].style && !images[0].classList.contains('done')) {
-              var data = images[0].style.backgroundImage.replace(/url\(data.*base64,/, '').replace(')', '')
-              $api.upload(data, function(error,data,c){
-                if (error) {
-                } else {
-                  // success
-                  images[0].classList.add('done')
-                  $scope.options.media_ids = $scope.options.media_ids || []
-                  $scope.options.media_ids.push(JSON.parse(data).media_id_string)
-                  $scope.$apply(function(){
-                    $scope.send()
-                  })
-                }
-              })
-              return ;
-            }
+            // var images = document.querySelectorAll('#media i');
+            //
+            // if (images[0] && images[0].style) {
+            //   var data = images[0].style.backgroundImage.replace(/url\(data.*base64,/, '').replace(')', '')
+            //   $api.upload(data, function(error,data,c){
+            //     if (error) {
+            //     } else {
+            //       // success
+            //       $scope.options.media = $scope.options.media || []
+            //       $scope.options.media.push(JSON.parse(data).media_id_string)
+            //     }
+            //   })
+            // }
             // if (images[1] && images[1].style) {
             //   var data = images[1].style.backgroundImage.replace(/url\(data.*base64,/, '').replace(')', '')
             //   $api.upload(data, function(error,data,c){
@@ -246,35 +191,19 @@
             //     }
             //   })
             // }
-            if ($scope.retweet && $scope.textLength == 0 && !$scope.options.media) {
-              $api.retweet($scope.tweet.id_str, function(error, data, response){
-                if (error) {
-                  var data = JSON.parse(error.data)
-                  if ( data.errors && data.errors[0] )
-                    $ui.alert('error', 'Sending Fail!!!',  data.errors[0].message)
-                  else
-                    $ui.alert('error', 'Sending Fail!!!',  "Something went wrong, Please try again.")
-                  $ui.showWindow()
-                } else {
-                  $scope.forceClose()
-                }
-              })
-            } else {
-              var text = $scope.status + ($scope.retweet ? " " + $scope.retweet : "")
-              $api.tweet(text, $scope.options, function(error, data, response){
-                console.log(error, data, response);
-                if (error) {
-                  var data = JSON.parse(error.data)
-                  if ( data.errors && data.errors[0] )
-                    $ui.alert('error', 'Sending Fail!!!',  data.errors[0].message)
-                  else
-                    $ui.alert('error', 'Sending Fail!!!',  "Something went wrong, Please try again.")
-                  $ui.showWindow()
-                } else {
-                  $scope.forceClose()
-                }
-              })
-            }
+            var text = $scope.status
+            $api.direct(user, text, function(error, data, response){
+              if (error) {
+                var data = JSON.parse(error.data)
+                if ( data.errors && data.errors[0] )
+                  $ui.alert('error', 'Sending Fail!!!',  data.errors[0].message)
+                else
+                  $ui.alert('error', 'Sending Fail!!!',  "Something went wrong, Please try again.")
+                $ui.showWindow()
+              } else {
+                $scope.forceClose()
+              }
+            })
 
           } else {
             $ui.alert('error', 'Authentication Fail', 'Cann\'t send tweet, you must login first.')
@@ -285,8 +214,5 @@
       </script>
     <script type="text/javascript" src="js/services.js"></script>
     <script type="text/javascript" src="bower_components/ngstorage/ngStorage.min.js"></script>
-    <div class="drop-area">
-
-    </div>
   </body>
 </html>

@@ -69,6 +69,8 @@ var Internal = {
       if (TweetBeat.mainWindow() != null) {
         if (data.id_str) {
           TweetBeat.mainWindow().webContents.send('stream-tweet', data)
+        } else if (data.direct_message) {
+          TweetBeat.mainWindow().webContents.send('stream-direct-message', data)
         } else if (data.delete) {
           TweetBeat.mainWindow().webContents.send('stream-delete', data)
         } else if (data.event == "favorite") {

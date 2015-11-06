@@ -14,7 +14,10 @@ angular.module('tweetbeat.services', [])
     upload: "https://upload.twitter.com/1.1/media/upload.json",
 
     // GET
-    status: "https://api.twitter.com/1.1/statuses/show/:id.json"
+    status: "https://api.twitter.com/1.1/statuses/show/:id.json",
+
+    // POST
+    directNew: "https://api.twitter.com/1.1/direct_messages/new.json",
   }
   var BrowserWindow = Remote.require('browser-window'),
       OAuth = require('oauth').OAuth;
@@ -89,6 +92,16 @@ angular.module('tweetbeat.services', [])
     userInfo: function(opt, callback) {
       opt = opt || {}
       this.isReady() && oauth.get(urls.userInfo + '?' + $.param(opt), access[activeAccount].token, access[activeAccount].secret, function (error, data, response) {
+        callback(error, data, response)
+      })
+    },
+    // direct
+    direct: function(user, text, callback) {
+      opt = {
+        screen_name: user,
+        text: text
+      }
+      this.isReady() && oauth.post(urls.directNew, access[activeAccount].token, access[activeAccount].secret, opt, function(error, data, response){
         callback(error, data, response)
       })
     },

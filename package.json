@@ -1,6 +1,6 @@
 {
   "name": "TweetBeat",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -14,9 +14,6 @@
   "author": "Farnabaz",
   "dependencies": {
     "angular": "^1.4.5",
-    "electron-prebuilt": "^0.31.2",
-    "gulp": "^3.9.0",
-    "gulp-less": "^3.0.3",
     "jquery": "^2.1.4",
     "node-notifier": "^4.2.3",
     "oauth": "git@github.com:waffleio/node-oauth.git",
@@ -25,6 +22,9 @@
     "twitter-text": "^1.13.2"
   },
   "devDependencies": {
-    "gulp-shell": "^0.5.0"
+    "gulp-shell": "^0.5.0",
+    "electron-prebuilt": "^0.31.2",
+    "gulp": "^3.9.0",
+    "gulp-less": "^3.0.3"
   }
 }

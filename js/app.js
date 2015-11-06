@@ -1,3 +1,26 @@
+if(!MouseEvent.prototype.is) {
+  MouseEvent.prototype.is = function(cls) {
+    if (this.path) {
+      for (var i in this.path) {
+        if (this.path[i].classList &&
+          this.path[i].classList.contains(cls)) {
+            return this.path[i];
+          }
+      }
+    }
+    return false
+  }
+};
+if (!Node.prototype.data){
+    Node.prototype.data = function(name){
+        return this.attributes['data-' + name] && this.attributes['data-' + name].value;
+    };
+};
+if (!HTMLElement.prototype.attribute){
+    HTMLElement.prototype.attribute = function(name){
+        return this.attributes[name] && this.attributes[name].value;
+    };
+};
 if (!Array.prototype.last){
     Array.prototype.last = function(){
         return this[this.length - 1];
@@ -129,7 +152,7 @@ app.filter('tweetEntity', ['$sce', '$rootScope', '$localStorage', function($sce,
       // This is very naive, should find a better way to parse this
       var index_map = {}
       Array.prototype.forEach.call(tweet.entities.urls, function(entry, i) {
-        if (!tweet.is_quote_status && tweet.quoted_status && entry.expanded_url.match("https?:\/\/(www\.)?twitter\.com(.*)"+tweet.quoted_status.id_str)) {
+        if (!tweet.retweeted_status && tweet.quoted_status && entry.expanded_url.match("https?:\/\/(www\.)?twitter\.com(.*)"+tweet.quoted_status.id_str)) {
           index_map[entry.indices[0]] = [entry.indices[1], function(text) {
             return ""; // remove qoute status link
           }];

@@ -17,3 +17,14 @@ app.directive('imgPreload', ['$rootScope', function($rootScope) {
       }
     };
 }]);
+
+app.directive('tweet', [function() {
+  return {
+    restrict: 'E',
+    replace: true,
+    scope: {
+      tweet: '=data', favorite: '&favorite', retweet: '&retweet', reply: '&reply'
+    },
+    templateUrl: 'tweet-template.html'
+  };
+}]);

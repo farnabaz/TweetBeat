@@ -12,7 +12,8 @@
 .cm-keyword {
   color: #2b7bbe !important;
 }
-.CodeMirror {
+#status,
+#heightHelper {
   position: fixed;
   top: 0;
   left: 70px;
@@ -24,6 +25,15 @@
   border: none;
   outline: none;
   line-height: 1.5em;
+  padding: 5px;
+}
+#heightHelper {
+  left: -1000px;
+  bottom: auto;
+  min-height: 88px;
+}
+#status {
+  height: 10000px;
 }
 button {
   float: right;
@@ -59,4 +69,48 @@ footer {
   border-radius: 3px;
   background-size: cover;
   margin: 0 3px;
+  position: relative;
+}
+#media i span {
+  display: none;
+}
+#media i:hover span {
+  display: block;
+  font-style: normal;
+  position: absolute;
+  background-color: tomato;
+  width: 14px;
+  height: 14px;
+  line-height: 13px;
+  color: #fff;
+  border-radius: 100%;
+  top: -7px;
+  right: -5px;
+  text-align: center;
+  font-size: 10px;
+  cursor: pointer;
+}
+#retweet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 40px;
+  font-size: 0.8em;
+  background-color: #f8f8f8;
+  padding: 5px;
+  border-top: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
+}
+#retweet .user {
+  width: 100%;
+  text-align: left;
+}
+.drop-area {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(163, 228, 241, 0.2);
+  display:none
 }

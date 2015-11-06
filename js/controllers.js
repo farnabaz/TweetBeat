@@ -1,6 +1,5 @@
 var ipc = require('ipc');
 var shell = require('shell');
-
 //inject the twitterService into the controller
 app.controller('MainController', function($rootScope, $scope, $state, $api, $compile, $ui, $localStorage) {
   $scope.searchForm = {
@@ -29,14 +28,25 @@ app.controller('MainController', function($rootScope, $scope, $state, $api, $com
     })
   });
   ipc.on('stream-favorite', function(item) {
-    $ui.notify(item.source.name + " favorited", item.target_object.text, function(){
-      // TODO: goto notifications
-    })
+    if (item.source.id_str != $scope.me.id_str) {
+      $ui.notify("Favorite from " + item.source.name, item.target_object.text, function(){
+        // TODO: goto notifications
+      })
+    }
+  });
+  ipc.on('stream-direct-message', function(item) {
+    if (item.sender.id_str != $scope.me.id_str) {
+      $ui.notify("Message from " + item.sender.screen_name , item.text, function(){
+        // TODO: goto notifications
+      })
+    }
   });
   ipc.on('stream-quoted-tweet', function(item) {
-    $ui.notify(item.source.name + " quote one of your tweets", item.target_object.text, function(){
-      // TODO: goto notifications
-    })
+    if (item.source.id_str != $scope.me.id_str) {
+      $ui.notify(item.source.name + " quote one of your tweets", item.target_object.text, function(){
+        // TODO: goto notifications
+      })
+    }
   });
   ipc.on('menu-goto-user', function(){
     $scope.$apply(function(){
@@ -63,12 +73,17 @@ app.controller('MainController', function($rootScope, $scope, $state, $api, $com
       }
     }
   }
+  // animate & goto new state
+  $rootScope.go = function(state, params) {
+    $rootScope.direction = 'forward';
+    $state.go(state, params);
+  }
+
   $scope.doSearch = function(data) {
     if (!data.q)
       return;
     if (data.action == '@') {
-      $('#main').removeClass('back')
-      $state.go('user', {
+      $rootScope.go('user', {
         id: data.q,
         back: $state.params.title,
         title: ""
@@ -91,16 +106,14 @@ app.controller('MainController', function($rootScope, $scope, $state, $api, $com
     tweet = tweet.retweeted_status || tweet
     tweet.favorited = true
     $api.favoriteCreate(tweet, function(er, data, res){
-      if (!er) {
-        var item = JSON.parse(data)
-        $scope.$apply(function(){
+      $scope.$apply(function(){
+        if (!er) {
+          var item = JSON.parse(data)
           $scope.tweets[item.id_str] = item
-        })
-      } else {
-        $scope.$apply(function(){
+        } else {
           $scope.tweets[tid].favorited = false
-        })
-      }
+        }
+      })
     });
   }
   $scope.reply = function(tid) {
@@ -126,54 +139,69 @@ app.controller('MainController', function($rootScope, $scope, $state, $api, $com
     return $out
   }
   $scope.titleClicked = function(e) {
-    var el = $(e.target)
-    if (el.is('back')) {
-      $('#main').addClass('back')
+    if (e.target.nodeName == "BACK") {
+      $rootScope.direction = 'back';
       window.history.back()
+
     }
   }
 
   $scope.click = function(e) {
     e.preventDefault()
-    var el = $(e.target)
-    if ( el.is('.media') ) {
+    var event = e.originalEvent
+    var el = false;
+    if (event.is('tweet-actions')) {
+    } else if (el = event.is('quote')) {
+      $rootScope.go('status', {
+        id: el.attribute('id'),
+        back: $state.params.title,
+        title: ""
+      });
+    } else if ( el = event.is('media') ) {
       var w = window.open('/window.html#/image/'+btoa(el.data('url')),
       {
         // toolbar: false
       })
-    } else if (el.is('.instagram')){
+    } else if (el = event.is('instagram')){
         var w = window.open('/window.html#/instagram/'+btoa(el.data('url')),
         {
           toolbar: false,
           width:500,
           height: 600
         },"width=500, height=600, title=TweetBeat")
-    } else if (el.is('[target="_blank"]')) {
-      shell.openExternal(el.attr('href'));
-    } else if (el.is('.user-image')) {
-      var tid = el.parents('.tweet').attr('id')
-      var user = $scope.tweets[tid].retweeted_status && $scope.tweets[tid].retweeted_status.user
-        || $scope.tweets[tid].user
-      $('#main').removeClass('back')
-      $state.go('user', {
+    } else if (el = event.is('url')) {
+      shell.openExternal(el.attribute('href'));
+    } else if (e.target.nodeName == 'HEADER') {
+      var tid = event.is('tweet').attribute('id')
+      var user = $scope.tweets[tid].user
+      $rootScope.go('user', {
         id: user.screen_name,
         back: $state.params.title,
         title: user.name,
         user: user
       });
-    } else if (el.is('.mention')) {
-        var match = el.attr('href').match(/https?:\/\/(www\.)?twitter.com\/([^\/]*)/i)
+    } else if (el = (event.is('user-image') || event.is('user'))) {
+      var tid = event.is('tweet').attribute('id')
+      var user = $scope.tweets[tid].retweeted_status && $scope.tweets[tid].retweeted_status.user
+        || $scope.tweets[tid].user
+      $rootScope.go('user', {
+        id: user.screen_name,
+        back: $state.params.title,
+        title: user.name,
+        user: user
+      });
+    } else if (el = event.is('mention')) {
+        var match = el.attribute('href').match(/https?:\/\/(www\.)?twitter.com\/([a-zA-Z0-9_]+)\/?/i)
         if (match) {
-          $('#main').removeClass('back')
-          $state.go('user', {
+          $rootScope.go('user', {
             id: match[2],
             back: $state.params.title,
             title: ""
           });
         }
-    } else if (el.is('div.text')){
-      $state.go('status', {
-        id: el.parents('.tweet').attr('id'),
+    } else if (el = event.is('tweet')){
+      $rootScope.go('status', {
+        id: el.attribute('id'),
         back: $state.params.title,
         title: ""
       });
@@ -181,7 +209,7 @@ app.controller('MainController', function($rootScope, $scope, $state, $api, $com
   }
 
   $scope.activeSection = function(section) {
-    $('#sidebar .icon').removeClass('active')
+    $('#sidebar .active').removeClass('active')
     $('#sidebar .'+section).addClass('active')
   }
 
@@ -370,7 +398,6 @@ app.controller('MentionController', function($scope, $state, $api){
         $scope.$apply(function(){
           if (!error) {
             $scope.status = JSON.parse(data)
-            console.log($scope.status);
           }
         })
       })
@@ -381,6 +408,7 @@ app.controller('MentionController', function($scope, $state, $api){
 app.controller('ImageController', function($scope,$state) {
   $scope.url = atob($state.params.url);
 });
+
 app.controller('InstagramController', function($scope,$state, $sce) {
   $scope.trustSrc = function(src) {
     return $sce.trustAsResourceUrl(src);
